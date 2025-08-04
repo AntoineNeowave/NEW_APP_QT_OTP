@@ -1,18 +1,23 @@
 # ui/otp_card.py
-from PyQt6.QtWidgets import QFrame, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QProgressBar
-from PyQt6.QtGui import QIcon
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtWidgets import (
+    QFrame, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QProgressBar,
+    QMenu, QMessageBox, QApplication, QToolTip
+)
+from PyQt6.QtGui import QIcon, QAction
+from PyQt6.QtCore import Qt, pyqtSignal, QPoint
 import time
 
 class OTPCard(QFrame):
     request_code = pyqtSignal(str)  # signal avec le label
+    delete_requested = pyqtSignal(str)
 
-    def __init__(self, label: str, code: str, subtitle: str, otp_type: int, parent=None):
+    def __init__(self, label: str, code: str, parameters: str, otp_type: int, period: int, parent=None):
         super().__init__(parent)
         self.label_text = label
         self.otp_type = otp_type
-        self.period = 30
+        self.period = period
         self.remaining_seconds = 0
+        self.parameter_text = parameters
 
         self.setFrameShape(QFrame.Shape.Box)
         self.setStyleSheet("""
@@ -27,19 +32,30 @@ class OTPCard(QFrame):
         main_layout = QHBoxLayout(self)
 
         # Circle
-        circle = QLabel("T" if otp_type == 2 else "H")
-        circle.setFixedSize(32, 32)
+        circle = QLabel("TOTP" if otp_type == 2 else "HOTP")
+        circle.setFixedSize(60, 60)
         circle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        circle.setStyleSheet(f"border-radius: 16px; background-color: {'#007bff' if otp_type == 2 else '#FFA500'}; color: white;")
 
         # Labels
         text_layout = QVBoxLayout()
         self.label_code = QLabel(f"<b>{code}</b>")
+        self.label_code.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        code_layout = QHBoxLayout()
+        code_layout.addWidget(self.label_code)
+        copy_button = QPushButton("📃")
+        copy_button.setFixedSize(24, 24)
+        copy_button.setFlat(True)
+        copy_button.setStyleSheet("font-size: 14px; padding: 0px;")
+        copy_button.setToolTip("Copier le code")
+        copy_button.clicked.connect(lambda: (
+            QApplication.clipboard().setText(self.label_code.text()),
+            QToolTip.showText(copy_button.mapToGlobal(QPoint(0, 0)), "Code copié !")
+        ))
+        code_layout.addWidget(copy_button)
+
         self.label_main = QLabel(label)
-        self.label_sub = QLabel(subtitle)
-        text_layout.addWidget(self.label_code)
+        text_layout.addLayout(code_layout)
         text_layout.addWidget(self.label_main)
-        text_layout.addWidget(self.label_sub)
 
         main_layout.addWidget(circle)
         main_layout.addLayout(text_layout)
@@ -68,3 +84,24 @@ class OTPCard(QFrame):
         self.remaining_seconds = now % self.period
         if hasattr(self, 'progress'):
             self.progress.setValue(self.remaining_seconds)
+
+    def contextMenuEvent(self, event):
+        menu = QMenu(self)
+
+        show_params_action = QAction("Afficher les paramètres", self)
+        show_params_action.triggered.connect(self.show_parameters)
+
+        delete_action = QAction("Supprimer", self)
+        delete_action.triggered.connect(lambda: self.delete_requested.emit(self.label_text))
+
+        menu.addAction(show_params_action)
+        menu.addAction(delete_action)
+        menu.exec(event.globalPos())
+
+    def show_parameters(self):
+        msg = QMessageBox(self)
+        msg.setWindowTitle(f"Paramètres - {self.label_text}")
+        msg.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        msg.setText(self.parameter_text)
+        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg.exec()
