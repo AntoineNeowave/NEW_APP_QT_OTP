@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QMenu, QMessageBox, QApplication, QToolTip
 )
 from PyQt6.QtGui import QIcon, QAction
-from PyQt6.QtCore import Qt, pyqtSignal, QPoint
+from PyQt6.QtCore import Qt, pyqtSignal, QSize
 import time
 
 class OTPCard(QFrame):
@@ -19,71 +19,66 @@ class OTPCard(QFrame):
         self.remaining_seconds = 0
         self.parameter_text = parameters
 
-        self.setFrameShape(QFrame.Shape.Box)
-        self.setStyleSheet("""
-            QFrame {
-                background: white;
-                border-radius: 10px;
-                padding: 10px;
-                margin: 4px;
-            }
-        """)
+        self.setObjectName("otpCard")
 
         main_layout = QHBoxLayout(self)
 
-        # Circle
-        circle = QLabel("TOTP" if otp_type == 2 else "HOTP")
-        circle.setFixedSize(60, 60)
-        circle.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
         # Labels
         text_layout = QVBoxLayout()
-        self.label_code = QLabel(f"<b>{code}</b>")
+        self.label_code = QLabel(f"{code}")
+        self.label_code.setObjectName("codeLabel")
         self.label_code.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         code_layout = QHBoxLayout()
         code_layout.addWidget(self.label_code)
-        copy_button = QPushButton("📃")
+        copy_button = QPushButton(QIcon("images/copier.png"), "")
         copy_button.setFixedSize(24, 24)
         copy_button.setFlat(True)
-        copy_button.setStyleSheet("font-size: 14px; padding: 0px;")
         copy_button.setToolTip("Copier le code")
-        copy_button.clicked.connect(lambda: (
+        copy_button.clicked.connect(lambda: 
             QApplication.clipboard().setText(self.label_code.text()),
-            QToolTip.showText(copy_button.mapToGlobal(QPoint(0, 0)), "Code copié !")
-        ))
+        )
         code_layout.addWidget(copy_button)
 
-        self.label_main = QLabel(label)
+        self.account = QLabel(f"{label}")
+        self.account.setObjectName("accountName")
+        self.issuer = QLabel(f"{label}")
+        self.issuer.setObjectName("issuer")
+        text_layout.addWidget(self.account)
+        text_layout.addWidget(self.issuer)
         text_layout.addLayout(code_layout)
-        text_layout.addWidget(self.label_main)
 
-        main_layout.addWidget(circle)
         main_layout.addLayout(text_layout)
         main_layout.addStretch()
 
         if otp_type == 1:
             btn = QPushButton()
-            btn.setIcon(QIcon.fromTheme("view-refresh"))
-            btn.setFixedSize(24, 24)
+            btn.setIcon(QIcon("images/refresh.png"))
+            btn.setIconSize(QSize(27, 27))
+            btn.setFixedSize(27, 27)
             btn.setFlat(True)
             btn.clicked.connect(lambda: self.request_code.emit(self.label_text))
             main_layout.addWidget(btn)
         else:
             self.progress = QProgressBar()
+            self.progress.setObjectName("progressBar")
             self.progress.setMinimum(0)
             self.progress.setMaximum(self.period)
-            self.progress.setFixedWidth(80)
+            self.progress.setTextVisible(False)
+            self.progress.setFixedWidth(120)
+            self.progress.setFixedHeight(15)
             main_layout.addWidget(self.progress)
+        
+        main_layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
     def set_code(self, code: str):
-        self.label_code.setText(f"<b>{code}</b>")
+        self.label_code.setText(f"{code}")
 
-    def update_progress(self, period: int):
-        self.period = period
-        now = int(time.time())
-        self.remaining_seconds = now % self.period
+    def update_progress_value(self, now: float):
         if hasattr(self, 'progress'):
-            self.progress.setValue(self.remaining_seconds)
+            elapsed = now % self.period
+            self.remaining_seconds = int(self.period - elapsed)
+            self.progress.setValue(round(elapsed))
+
 
     def contextMenuEvent(self, event):
         menu = QMenu(self)

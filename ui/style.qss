@@ -1,0 +1,83 @@
+QWidget#header{
+    background: #52c5e4;
+}
+
+QLabel#titreApp{
+    color: #f8fafc;
+    font-weight: bold;
+    font-size: 20px;
+    margin-left: 10px;
+}
+
+QLabel#statusKey{
+    color: red;
+    font-style: italic;
+}
+
+QWidget#listArea{
+    background:rgb(243, 253, 255);
+}
+
+QWidget#enrolSeach{
+    background:rgb(243, 253, 255);
+}
+
+QFrame#otpCard{
+    
+    border-radius: 10px;
+    background: rgb(228, 243, 245);
+}
+
+QScrollArea {
+    border: none;
+}
+
+QLineEdit#searchBar{
+    border: 1px solid grey;
+    border-radius: 10px;
+    padding: 4px;
+}
+
+QLineEdit#searchBar:hover, QLineEdit#searchBar:focus{
+    border: 1.5px solid #52c5e4;
+    background: white;
+    outline: none;
+}
+
+QPushButton#enrolButton{
+    background-color: transparent;
+    border: none;
+}
+
+QPushButton#enrolButton:pressed {
+    background-color: transparent;
+    border: none;
+}
+QPushButton#enrolButton:focus {
+    outline: none;
+}
+
+QLabel#codeLabel{
+    font-weight: bold;
+    font-size: 25px;
+}
+
+QLabel#accountName{
+    font-size: 15px;
+}
+
+QLabel#issuer{
+    font-size: 10px;
+    font-style: italic;
+}
+
+QProgressBar#progressBar{
+    background-color: rgb(243, 253, 255);
+    border: 1px solid #a0d2e6;
+    border-radius: 5px;
+}
+
+QProgressBar#progressBar::chunk{
+    background-color: qlineargradient(x1:0, x2:1, stop:0 rgb(3, 156, 199), stop:1 rgb(128, 206, 227));
+    border-radius: 5px;
+}

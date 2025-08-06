@@ -1,24 +1,26 @@
 # ui/main_window.py
 from PyQt6.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QHBoxLayout,
-    QScrollArea, QPushButton, QFrame, QMessageBox, QStackedLayout
+    QScrollArea, QPushButton, QFrame, QMessageBox, QStackedLayout, QLineEdit
 )
-from PyQt6.QtGui import QPixmap
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QPixmap, QIcon
+from PyQt6.QtCore import Qt, QTimer, QSize
 from ui.otp_card import OTPCard
 from ui.enroll_widget import EnrollWidget
 from core.fido_device import FidoOTPBackend
 from core.otp_model import OTPGenerator
-
+import time
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Gestionnaire OTP Winkeo/Badgeo")
+        self.setWindowTitle("Winkeo/Badgeo OTP Manager")
+        self.setWindowIcon(QIcon("images/logo.png"))
         self.resize(400, 600)
 
         self.backend = FidoOTPBackend()
         self.generator_widgets = {}
 
+        #Pour une interface à onglets
         self.stack = QStackedLayout()
         main_layout = QVBoxLayout(self)
         main_layout.addLayout(self.stack)
@@ -29,48 +31,67 @@ class MainWindow(QWidget):
 
         # Header
         header_widget = QWidget()
+        header_widget.setObjectName("header")
         header_layout = QHBoxLayout(header_widget)
         pixmap = QPixmap("images/logo.png")
         label_logo = QLabel()
-        label_logo.setPixmap(pixmap.scaled(150, 150, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
-        label_logo.setFixedSize(label_logo.pixmap().size())
+        # label_logo.setFixedSize(30, 30)
+        label_logo.setPixmap(pixmap.scaled(35, 35, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+        label_logo.setScaledContents(False)
         label_titre = QLabel("NEOWAVE OTP MANAGER")
-        header_layout.addWidget(label_titre)
+        label_titre.setObjectName("titreApp")
         header_layout.addStretch()
-        header_layout.addWidget(label_logo)        
+        header_layout.addWidget(label_logo)
+        header_layout.addWidget(label_titre)
+        header_layout.addStretch()        
         main_view_layout.addWidget(header_widget)
 
-        # header_layout.setContentsMargins(0, 0, 0, 0)  # supprime marges du layout
-        # header_layout.setSpacing(0)  # réduit espacement entre widgets
-        # label_logo.setContentsMargins(0, 0, 0, 0)   # supprime marges internes logo
-        # label_titre.setContentsMargins(0, 0, 0, 0)  # supprime marges internes titre
-        # main_layout.setContentsMargins(0, 0, 0, 0)  # ou (0,0,0,0) pour tout supprimer
-        # main_layout.setSpacing(0)
+        header_layout.setContentsMargins(0, 15, 0, 15)  # supprime marges du layout
+        header_layout.setSpacing(0)  # réduit espacement entre widgets
+        main_layout.setContentsMargins(0, 0, 0, 0)  # ou (0,0,0,0) pour tout supprimer
+        main_layout.setSpacing(0)
+        main_view_layout.setContentsMargins(0, 0, 0, 0)
+        main_view_layout.setSpacing(0)
 
+        # boutton enrol et searchbar
+        enrol_search_widget  = QWidget()
+        enrol_search_widget.setObjectName("enrolSeach")
+        enrol_search_layout  = QHBoxLayout(enrol_search_widget )
+        # enrol_layout.setContentsMargins(0,0,0,0)
+        # enrol_layout.setSpacing(0)
+
+        enrol_button = IconButton("images/plus5.png", "images/plus_clicked.png")
+
+
+        search_bar = QLineEdit()
+        search_bar.setObjectName("searchBar")
+        search_bar.setPlaceholderText("Rechercher un code...")
+        search_bar.setClearButtonEnabled(True)
+        search_bar.textChanged.connect(self.on_search_text_changed)
+        search_bar.setMinimumWidth(250)
+        enrol_search_layout .addWidget(enrol_button, alignment=Qt.AlignmentFlag.AlignLeft)
+        enrol_search_layout.addStretch()
+        enrol_search_layout .addWidget(search_bar)
+        enrol_search_layout.addStretch()
+        enrol_button.clicked.connect(self.switch_to_enroll_view)
+        main_view_layout.addWidget(enrol_search_widget )
 
         # OTP list area
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
+        
         self.otp_list_widget = QWidget()
+        self.otp_list_widget.setObjectName("listArea")
         self.otp_list_layout = QVBoxLayout(self.otp_list_widget)
+        self.otp_list_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
         scroll_area.setWidget(self.otp_list_widget)
         main_view_layout.addWidget(scroll_area, stretch=1)
 
 
-        # Footer
-        footer = QWidget()
-        footer_layout = QHBoxLayout(footer)
-        enrol_button = QPushButton("➕ Enroller une seed")
-        info_label = QLabel("Mentions légales | Contact")
-        footer_layout.addWidget(enrol_button)
-        footer_layout.addStretch()
-        footer_layout.addWidget(info_label)
-        enrol_button.clicked.connect(self.switch_to_enroll_view)
-        main_view_layout.addWidget(footer)
-
         #Status présence du device
         self.status_label = QLabel()
-        self.status_label.setStyleSheet("color: red; font-style: italic;")
+        self.status_label.setObjectName("statusKey")
         self.status_label.hide()  # caché par défaut
         main_view_layout.addWidget(self.status_label)
 
@@ -84,7 +105,23 @@ class MainWindow(QWidget):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.refresh)
         self.timer.start(1000)
-    
+
+        self.progress_timer = QTimer(self)
+        self.progress_timer.timeout.connect(self.update_progress_bars)
+        self.progress_timer.start(50)
+
+    def update_progress_bars(self):
+        now = time.time()
+        for card in self.generator_widgets.values():
+            if card.otp_type == 2:
+                card.update_progress_value(now)
+
+        
+    def on_search_text_changed(self, text):
+        # parcourir cards, cacher ceux qui ne correspondent pas
+        for label, card in self.generator_widgets.items():
+            card.setVisible(text.lower() in label.lower())
+
     def switch_to_enroll_view(self):
         self.stack.setCurrentWidget(self.enroll_widget)
 
@@ -128,10 +165,9 @@ class MainWindow(QWidget):
                 card.request_code.connect(lambda l=g.label, t=g.otp_type, p=g.period: self.generate_and_update(l, t, p))
                 card.delete_requested.connect(self.confirm_delete)
                 self.otp_list_layout.addWidget(card)
+                #card.setMaximumHeight(100)
                 self.generator_widgets[label] = card
 
-            if g.otp_type == 2:
-                self.generator_widgets[label].update_progress(g.period)
 
         for old_label in existing - active:
             card = self.generator_widgets.pop(old_label)
@@ -162,3 +198,42 @@ class MainWindow(QWidget):
             else:
                 error_msg = getattr(self.backend, "last_error", f"Échec de la suppression de '{label}'")
                 QMessageBox.warning(self, "Erreur", error_msg)
+
+class IconButton(QPushButton):
+    def __init__(self, normal_icon, hover_icon, parent=None):
+        super().__init__(parent)
+        self.normal_icon = QIcon(normal_icon)
+        self.hover_icon = QIcon(hover_icon)
+        self.setIcon(self.normal_icon)
+        self.setIconSize(QSize(30, 30))
+        self.setFixedSize(30, 30)
+        self.setFlat(True)
+        self.setObjectName("enrolButton")
+        self.is_pressed = False
+
+        self.pressed.connect(self.on_pressed)
+        self.released.connect(self.on_released)
+
+    def enterEvent(self, event):
+        # Survol souris
+        if not self.is_pressed:
+            self.setIcon(self.hover_icon)
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        # Quitte bouton
+        if not self.is_pressed:
+            self.setIcon(self.normal_icon)
+        super().leaveEvent(event)
+
+    def on_pressed(self):
+        self.is_pressed = True
+        self.setIcon(self.hover_icon)
+
+    def on_released(self):
+        self.is_pressed = False
+        # Remet l’icône en fonction de l’état hover/survol
+        if self.underMouse():
+            self.setIcon(self.hover_icon)
+        else:
+            self.setIcon(self.normal_icon)
