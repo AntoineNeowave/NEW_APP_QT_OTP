@@ -5,7 +5,6 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtCore import Qt, pyqtSignal, QSize
-import time
 from ui.progress_indicator import ProgressIndicator
 
 class OTPCard(QFrame):
@@ -53,7 +52,7 @@ class OTPCard(QFrame):
         main_layout.addWidget(left_widget)
         main_layout.addStretch()
 
-        if otp_type == 1:
+        if otp_type == 1:  # HOTP
             btn = QPushButton()
             btn.setIcon(QIcon("images/refresh.png"))
             btn.setIconSize(QSize(27, 27))
@@ -61,7 +60,7 @@ class OTPCard(QFrame):
             btn.setFlat(True)
             btn.clicked.connect(lambda: self.request_code.emit(self.label_text))
             main_layout.addWidget(btn)
-        else:
+        else:  # TOTP
             self.progress = ProgressIndicator(period)
             main_layout.addWidget(self.progress, alignment=Qt.AlignmentFlag.AlignVCenter)
         
@@ -69,6 +68,13 @@ class OTPCard(QFrame):
 
     def set_code(self, code: str):
         self.label_code.setText(f"{code}")
+
+    def update_progress_value(self, current_time):
+        """Met à jour la barre de progression pour TOTP"""
+        if self.otp_type == 2:  # TOTP seulement
+            cycle_position = current_time % self.period
+            self.remaining_seconds = self.period - cycle_position
+            self.progress.update_progress_value(current_time)
 
     def contextMenuEvent(self, event):
         menu = QMenu(self)
