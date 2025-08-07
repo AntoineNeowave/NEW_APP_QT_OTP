@@ -1,11 +1,12 @@
 # ui/otp_card.py
 from PyQt6.QtWidgets import (
     QFrame, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QProgressBar,
-    QMenu, QMessageBox, QApplication, QToolTip
+    QMenu, QMessageBox, QApplication, QWidget
 )
 from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtCore import Qt, pyqtSignal, QSize
 import time
+from ui.progress_indicator import ProgressIndicator
 
 class OTPCard(QFrame):
     request_code = pyqtSignal(str)  # signal avec le label
@@ -24,7 +25,9 @@ class OTPCard(QFrame):
         main_layout = QHBoxLayout(self)
 
         # Labels
-        text_layout = QVBoxLayout()
+        left_widget = QWidget()
+        left_widget.setFixedWidth(200)
+        left_layout = QVBoxLayout(left_widget)
         self.label_code = QLabel(f"{code}")
         self.label_code.setObjectName("codeLabel")
         self.label_code.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
@@ -38,16 +41,16 @@ class OTPCard(QFrame):
             QApplication.clipboard().setText(self.label_code.text()),
         )
         code_layout.addWidget(copy_button)
-
+        code_layout.addStretch()
         self.account = QLabel(f"{label}")
         self.account.setObjectName("accountName")
         self.issuer = QLabel(f"{label}")
         self.issuer.setObjectName("issuer")
-        text_layout.addWidget(self.account)
-        text_layout.addWidget(self.issuer)
-        text_layout.addLayout(code_layout)
+        left_layout.addWidget(self.account)
+        left_layout.addWidget(self.issuer)
+        left_layout.addLayout(code_layout)
 
-        main_layout.addLayout(text_layout)
+        main_layout.addWidget(left_widget)
         main_layout.addStretch()
 
         if otp_type == 1:
@@ -59,26 +62,13 @@ class OTPCard(QFrame):
             btn.clicked.connect(lambda: self.request_code.emit(self.label_text))
             main_layout.addWidget(btn)
         else:
-            self.progress = QProgressBar()
-            self.progress.setObjectName("progressBar")
-            self.progress.setMinimum(0)
-            self.progress.setMaximum(self.period)
-            self.progress.setTextVisible(False)
-            self.progress.setFixedWidth(120)
-            self.progress.setFixedHeight(15)
-            main_layout.addWidget(self.progress)
+            self.progress = ProgressIndicator(period)
+            main_layout.addWidget(self.progress, alignment=Qt.AlignmentFlag.AlignVCenter)
         
         main_layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
     def set_code(self, code: str):
         self.label_code.setText(f"{code}")
-
-    def update_progress_value(self, now: float):
-        if hasattr(self, 'progress'):
-            elapsed = now % self.period
-            self.remaining_seconds = int(self.period - elapsed)
-            self.progress.setValue(round(elapsed))
-
 
     def contextMenuEvent(self, event):
         menu = QMenu(self)

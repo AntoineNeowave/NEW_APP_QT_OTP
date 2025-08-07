@@ -4,12 +4,16 @@ from PyQt6.QtWidgets import (
     QScrollArea, QPushButton, QFrame, QMessageBox, QStackedLayout, QLineEdit
 )
 from PyQt6.QtGui import QPixmap, QIcon
-from PyQt6.QtCore import Qt, QTimer, QSize
+from PyQt6.QtCore import Qt, QTimer, QSize, QThread
 from ui.otp_card import OTPCard
 from ui.enroll_widget import EnrollWidget
 from core.fido_device import FidoOTPBackend
 from core.otp_model import OTPGenerator
+from core.otp_refresh_worker import OTPRefreshWorker
+
 import time
+
+
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -101,21 +105,11 @@ class MainWindow(QWidget):
         self.enroll_widget.cancel_requested.connect(self.switch_to_main_view)
         self.stack.addWidget(self.enroll_widget)
 
-        self.refresh()
+        self.start_refresh_thread()
+
         self.timer = QTimer(self)
-        self.timer.timeout.connect(self.refresh)
+        self.timer.timeout.connect(self.start_refresh_thread)
         self.timer.start(1000)
-
-        self.progress_timer = QTimer(self)
-        self.progress_timer.timeout.connect(self.update_progress_bars)
-        self.progress_timer.start(50)
-
-    def update_progress_bars(self):
-        now = time.time()
-        for card in self.generator_widgets.values():
-            if card.otp_type == 2:
-                card.update_progress_value(now)
-
         
     def on_search_text_changed(self, text):
         # parcourir cards, cacher ceux qui ne correspondent pas
@@ -129,19 +123,26 @@ class MainWindow(QWidget):
         self.stack.setCurrentWidget(self.main_view)
 
     def on_enroll_success(self):
-        self.refresh()
+        self.start_refresh_thread()
         self.switch_to_main_view()
 
-    def refresh(self):
-        raw_generators = self.backend.list_generators()
-        if not raw_generators:
-            self.status_label.setText("🔌 Aucun périphérique OTP détecté.")
-            self.status_label.show()
+    def start_refresh_thread(self):
+        if hasattr(self, 'worker_thread') and self.worker_thread is not None and self.worker_thread.isRunning():
             return
-        else:
-            self.status_label.hide()
-        generators = [OTPGenerator(g) for g in raw_generators]
+        self.worker_thread = QThread()
+        self.worker = OTPRefreshWorker(self.backend)
+        self.worker.moveToThread(self.worker_thread)
 
+        self.worker_thread.started.connect(self.worker.run)
+        self.worker.finished.connect(self.on_refresh_data_ready)
+        self.worker.error.connect(self.on_refresh_error)
+        self.worker.finished.connect(self.worker_thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.worker_thread.finished.connect(self.worker_thread.deleteLater)
+        self.worker_thread.finished.connect(lambda: setattr(self, 'worker_thread', None))
+        self.worker_thread.start()
+
+    def on_refresh_data_ready(self, generators):
         existing = set(self.generator_widgets.keys())
         active = set()
 
@@ -150,14 +151,9 @@ class MainWindow(QWidget):
             active.add(label)
 
             if label not in self.generator_widgets:
-                code = self.backend.generate_code(label, g.otp_type, g.period)
-
-                if code is None:
-                    code = "Erreur"
-
                 card = OTPCard(
                     label=g.label,
-                    code=code,
+                    code=g.code,
                     parameters=g.display_parameters(),
                     otp_type=g.otp_type,
                     period=g.period
@@ -165,7 +161,6 @@ class MainWindow(QWidget):
                 card.request_code.connect(lambda l=g.label, t=g.otp_type, p=g.period: self.generate_and_update(l, t, p))
                 card.delete_requested.connect(self.confirm_delete)
                 self.otp_list_layout.addWidget(card)
-                #card.setMaximumHeight(100)
                 self.generator_widgets[label] = card
 
 
@@ -173,9 +168,21 @@ class MainWindow(QWidget):
             card = self.generator_widgets.pop(old_label)
             card.setParent(None)
 
-        for label, card in self.generator_widgets.items():
-            if card.otp_type == 2 and card.remaining_seconds == 0:
-                self.generate_and_update(label, 2, card.period)
+    def on_refresh_error(self, message):
+        self.status_label.setText(f"❌ Erreur : {message}")
+        self.status_label.show()
+        for card in self.generator_widgets.values():
+            card.setParent(None)
+        self.generator_widgets.clear()
+
+    def closeEvent(self, event):
+        try:
+            if hasattr(self, 'worker_thread') and self.worker_thread.isRunning():
+                self.worker_thread.quit()
+                self.worker_thread.wait()
+        except Exception:
+            pass
+        super().closeEvent(event)
 
     def generate_and_update(self, label, otp_type, period):
         code = self.backend.generate_code(label, otp_type, period)

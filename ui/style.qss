@@ -70,14 +70,3 @@ QLabel#issuer{
     font-size: 10px;
     font-style: italic;
 }
-
-QProgressBar#progressBar{
-    background-color: rgb(243, 253, 255);
-    border: 1px solid #a0d2e6;
-    border-radius: 5px;
-}
-
-QProgressBar#progressBar::chunk{
-    background-color: qlineargradient(x1:0, x2:1, stop:0 rgb(3, 156, 199), stop:1 rgb(128, 206, 227));
-    border-radius: 5px;
-}
