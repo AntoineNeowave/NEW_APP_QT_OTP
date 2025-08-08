@@ -1,9 +1,14 @@
 # core/otp_model.py
+# Transforme la map CBOR recue d'OTP_ENUMERATE en un objet Python
+# et une méthode pour afficher les paramètres
+
 ALG_CODE_TO_NAME = {
     4: "SHA1",
     5: "SHA256",
     7: "SHA512"
 }
+
+TYPE_NAME = {1: "HOTP", 2: "TOTP"}
 
 class OTPGenerator:
     def __init__(self, data: dict):
@@ -15,7 +20,11 @@ class OTPGenerator:
         self.period = data.get(6, 30 if self.otp_type == 2 else None)
 
     def display_parameters(self) -> str:
-        parts = [f"User : {self.label}", f"Code length : {self.digits}"]
+        parts = [
+            f"Type : {TYPE_NAME.get(self.otp_type, '?')}",
+            f"User : {self.label}",
+            f"Code length : {self.digits}"
+            ]
         if self.otp_type == 1:
             counter_value = int.from_bytes(self.counter, 'big') if self.counter else '?'
             parts.append(f"Counter : {counter_value}")

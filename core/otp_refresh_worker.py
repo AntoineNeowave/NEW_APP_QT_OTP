@@ -1,4 +1,6 @@
 # core/otp_refresh_worker.py
+# thread de rafraîchissement qui protège l’UI des I/O lents.
+
 from PyQt6.QtCore import QObject, pyqtSignal
 from core.otp_model import OTPGenerator
 
@@ -48,7 +50,7 @@ class OTPRefreshWorker(QObject):
                     if generator.otp_type == 2:  # TOTP
                         code = self.backend.generate_code(generator.label, generator.otp_type, generator.period)
                         generator.code = code if code else "Erreur"
-                    else:  # HOTP
+                    elif generator.otp_type == 1:  # HOTP
                         generator.code = "●●●●●●"  # Code par défaut pour HOTP
                         
                     result.append(generator)

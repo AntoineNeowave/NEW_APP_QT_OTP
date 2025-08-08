@@ -1,4 +1,6 @@
 # core/fido_device.py
+
+# Opérations FIDO/OTP,  passerelle thread sécurisée pour les opérations I/O lentes. 
 import threading
 from fido2.ctap2 import Ctap2
 from fido2.hid import CtapHidDevice, CAPABILITY
@@ -27,7 +29,7 @@ OTP_ERROR_CODES = {
 
 class FidoOTPBackend:
     def __init__(self):
-        self.lock = threading.Lock()
+        self.lock = threading.Lock()  # Une commande CTAP à la fois, sinon, crash
 
     @staticmethod
     def get_error_message(code: int) -> str:

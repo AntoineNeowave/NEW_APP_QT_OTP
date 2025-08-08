@@ -104,27 +104,30 @@ class MainWindow(QWidget):
         self.enroll_widget.cancel_requested.connect(self.switch_to_main_view)
         self.stack.addWidget(self.enroll_widget)
 
-        # Timer principal - moins fréquent pour réduire la charge
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.schedule_refresh)
-        self.timer.start(500)  # 0.5s
 
         # Timer pour les barres de progression TOTP
         self.progress_timer = QTimer(self)
         self.progress_timer.timeout.connect(self.update_progress_bars)
-        self.progress_timer.start(50)
+        self.progress_timer.start(20)
 
         # Première tentative de connexion
         self.schedule_refresh()
 
     def update_progress_bars(self):
-        """Met à jour les barres de progression et déclenche un refresh si nécessaire"""
+        """Met à jour les barres de progression et force un refresh global quand on passe la seconde 0 du cycle."""
         now = time.time()
-
+        needs_refresh = False
+        
         for card in self.generator_widgets.values():
             if card.otp_type == 2:  # TOTP seulement
                 card.update_progress_value(now)
-
+                # Vérifier si on doit rafraîchir le code (nouveau cycle)
+                if card.remaining_seconds <= 0.05 and not needs_refresh:
+                    needs_refresh = True
+        
+        # Déclencher un refresh si on est en fin de cycle TOTP
+        if needs_refresh and self.device_connected:
+            self.schedule_refresh(force=True)
         
     def on_search_text_changed(self, text):
         for label, card in self.generator_widgets.items():
@@ -145,7 +148,7 @@ class MainWindow(QWidget):
 
     def schedule_refresh(self, force=False):
         """Planifie un refresh en évitant les doublons"""
-
+            
         if self.refresh_pending:
             return
             
@@ -257,6 +260,15 @@ class MainWindow(QWidget):
         
         if label in self.generator_widgets:
             self.generator_widgets[label].set_code(code)
+        
+        gens = self.backend.list_generators()
+        if gens:
+            desc = next((g for g in gens if g.get(1) == label), None)
+        if desc:
+            from core.otp_model import OTPGenerator
+            new_params = OTPGenerator(desc).display_parameters()
+            self.generator_widgets[label].parameter_text = new_params
+
 
     def confirm_delete(self, label):
         if not self.device_connected:

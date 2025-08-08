@@ -1,4 +1,5 @@
 # ui/otp_card.py
+# Affiche un compte OTP sous forme de carte avec le code, le label et les paramètres.
 from PyQt6.QtWidgets import (
     QFrame, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QProgressBar,
     QMenu, QMessageBox, QApplication, QWidget
@@ -72,9 +73,8 @@ class OTPCard(QFrame):
     def update_progress_value(self, current_time):
         """Met à jour la barre de progression pour TOTP"""
         if self.otp_type == 2:  # TOTP seulement
-            cycle_position = current_time % self.period
-            self.remaining_seconds = self.period - cycle_position
             self.progress.update_progress_value(current_time)
+            self.remaining_seconds = self.progress.remaining_seconds
 
     def contextMenuEvent(self, event):
         menu = QMenu(self)
