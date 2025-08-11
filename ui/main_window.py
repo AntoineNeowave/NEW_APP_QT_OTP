@@ -24,7 +24,6 @@ class MainWindow(QWidget):
         self.backend = FidoOTPBackend()
         self.generator_widgets = {}
         self.worker_thread = None
-        self.device_connected = False
 
         #Pour une interface à onglets
         self.stack = QStackedLayout()
@@ -111,14 +110,14 @@ class MainWindow(QWidget):
         # Première tentative de connexion
         self.start_refresh_thread()
 
-        self.empty_card = OTPCard(
-            label="Aucune clé détectée",
-            code="",
-            parameters="Insérez une clé OTP pour commencer.",
-            otp_type=2,
-            period=30,
-        )
-        self.otp_list_layout.addWidget(self.empty_card)
+        # self.empty_card = OTPCard(
+        #     label="Aucune clé détectée",
+        #     code="",
+        #     parameters="Insérez une clé OTP pour commencer.",
+        #     otp_type=2,
+        #     period=30,
+        # )
+        # self.otp_list_layout.addWidget(self.empty_card)
 
 
     def update_progress_bars(self):
@@ -134,7 +133,7 @@ class MainWindow(QWidget):
                     needs_refresh = True
         
         # Déclencher un refresh si on est en fin de cycle TOTP
-        if needs_refresh and self.device_connected:
+        if needs_refresh:
             self.start_refresh_thread()
         
     def on_search_text_changed(self, text):
@@ -142,9 +141,6 @@ class MainWindow(QWidget):
             card.setVisible(text.lower() in label.lower())
 
     def switch_to_enroll_view(self):
-        if not self.device_connected:
-            QMessageBox.warning(self, "Erreur", "Aucun périphérique OTP détecté. Veuillez connecter votre clé.")
-            return
         self.stack.setCurrentWidget(self.enroll_widget)
 
     def switch_to_main_view(self):
@@ -168,7 +164,6 @@ class MainWindow(QWidget):
         self.worker_thread.started.connect(self.worker.run)
         self.worker.finished.connect(self.on_refresh_data_ready)
         self.worker.error.connect(self.on_refresh_error)
-        self.worker.device_status_changed.connect(self.on_device_status_changed)
         
         # Nettoyage
         self.worker.finished.connect(self.worker_thread.quit)
@@ -184,32 +179,8 @@ class MainWindow(QWidget):
     def on_worker_finished(self):
         """Appelé quand le worker se termine"""
 
-
-    def on_device_status_changed(self, connected):
-
-        """Gère les changements d'état de connexion du device"""
-        if connected != self.device_connected:
-            self.device_connected = connected
-
-            if connected:
-                if self.empty_card is not None:
-                    self.otp_list_layout.removeWidget(self.empty_card)
-                    self.empty_card.deleteLater()
-                    self.empty_card = None
-                self.status_label.hide()
-                # Device reconnecté - forcer un refresh immédiat
-                QTimer.singleShot(100, lambda: self.start_refresh_thread())
-
-                
-            else:
-                #self.clear_all_cards()
-                self.status_label.setText("🔌 Aucun périphérique OTP détecté.")
-                self.status_label.show()
-                self.otp_list_layout.addWidget(self.empty_card)
-
     def on_refresh_data_ready(self, generators):
         """Met à jour l'UI avec les nouvelles données"""
-        self.device_connected = True
         self.status_label.hide()
         
         existing = set(self.generator_widgets.keys())
@@ -244,7 +215,6 @@ class MainWindow(QWidget):
 
     def on_refresh_error(self, message):
         """Gère les erreurs de refresh"""
-        self.device_connected = False
         self.status_label.setText(f"❌ Erreur : {message}")
         self.status_label.show()
         
@@ -259,8 +229,7 @@ class MainWindow(QWidget):
 
     def generate_and_update(self, label, otp_type, period):
         """Génère et met à jour un code spécifique (pour HOTP principalement)"""
-        if not self.device_connected:
-            return
+
             
         # Pour HOTP, on fait un appel direct et rapide
         code = self.backend.generate_code(label, otp_type, period)
@@ -280,9 +249,6 @@ class MainWindow(QWidget):
 
 
     def confirm_delete(self, label):
-        if not self.device_connected:
-            QMessageBox.warning(self, "Erreur", "Aucun périphérique OTP détecté.")
-            return
             
         reply = QMessageBox.question(
             self,
