@@ -26,7 +26,6 @@ OTP_ERROR_CODES = {
     0xF5: ("OTP_ERR_GENERATOR_NOT_FOUND", "Générateur introuvable"),
     0xF6: ("OTP_ERR_MEMORY_FULL", "Mémoire pleine, impossible de créer un autre générateur"),
 }
-
 class FidoOTPBackend:
     def __init__(self):
         self.lock = threading.Lock()  # Une commande CTAP à la fois, sinon, crash
@@ -34,7 +33,9 @@ class FidoOTPBackend:
     @staticmethod
     def get_error_message(code: int) -> str:
         return OTP_ERROR_CODES.get(code, (f"Erreur inconnue 0x{code:02X}", "Erreur non documentée"))[1]
+    
 
+        
     def _connect(self):
         # si self.ctap existe déjà, on la réutilise
         if hasattr(self, "ctap") and self.ctap:

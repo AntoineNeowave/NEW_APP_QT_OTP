@@ -7,7 +7,7 @@ from PyQt6.QtGui import QPixmap, QIcon
 from PyQt6.QtCore import Qt, QTimer, QSize, QThread
 from ui.otp_card import OTPCard
 from ui.enroll_widget import EnrollWidget
-from core.fido_device import FidoOTPBackend
+from core.fido_backend import FidoOTPBackend
 from core.otp_model import OTPGenerator
 from core.otp_refresh_worker import OTPRefreshWorker
 
@@ -24,8 +24,6 @@ class MainWindow(QWidget):
         self.backend = FidoOTPBackend()
         self.generator_widgets = {}
         self.worker_thread = None
-        self.refresh_pending = False
-        self.last_successful_refresh = 0
         self.device_connected = False
 
         #Pour une interface à onglets
@@ -111,7 +109,17 @@ class MainWindow(QWidget):
         self.progress_timer.start(20)
 
         # Première tentative de connexion
-        self.schedule_refresh()
+        self.start_refresh_thread()
+
+        self.empty_card = OTPCard(
+            label="Aucune clé détectée",
+            code="",
+            parameters="Insérez une clé OTP pour commencer.",
+            otp_type=2,
+            period=30,
+        )
+        self.otp_list_layout.addWidget(self.empty_card)
+
 
     def update_progress_bars(self):
         """Met à jour les barres de progression et force un refresh global quand on passe la seconde 0 du cycle."""
@@ -127,7 +135,7 @@ class MainWindow(QWidget):
         
         # Déclencher un refresh si on est en fin de cycle TOTP
         if needs_refresh and self.device_connected:
-            self.schedule_refresh(force=True)
+            self.start_refresh_thread()
         
     def on_search_text_changed(self, text):
         for label, card in self.generator_widgets.items():
@@ -143,22 +151,15 @@ class MainWindow(QWidget):
         self.stack.setCurrentWidget(self.main_view)
 
     def on_enroll_success(self):
-        self.schedule_refresh(force=True)
+        self.start_refresh_thread()
+        #à faire : cas ou on enroll en meme temps que l'on génère un code (en meme temps que le worker tourne)
         self.switch_to_main_view()
 
-    def schedule_refresh(self, force=False):
-        """Planifie un refresh en évitant les doublons"""
-            
-        if self.refresh_pending:
-            return
-            
-        if hasattr(self, 'worker_thread') and self.worker_thread is not None and self.worker_thread.isRunning():
-            return
-            
-        self.refresh_pending = True
-        self.start_refresh_thread()
 
     def start_refresh_thread(self):
+        if hasattr(self, 'worker_thread') and self.worker_thread is not None and self.worker_thread.isRunning():
+            return
+
         """Lance le worker dans un thread séparé"""
         self.worker_thread = QThread()
         self.worker = OTPRefreshWorker(self.backend)
@@ -182,24 +183,32 @@ class MainWindow(QWidget):
 
     def on_worker_finished(self):
         """Appelé quand le worker se termine"""
-        self.refresh_pending = False
+
 
     def on_device_status_changed(self, connected):
+
         """Gère les changements d'état de connexion du device"""
         if connected != self.device_connected:
             self.device_connected = connected
+
             if connected:
+                if self.empty_card is not None:
+                    self.otp_list_layout.removeWidget(self.empty_card)
+                    self.empty_card.deleteLater()
+                    self.empty_card = None
                 self.status_label.hide()
                 # Device reconnecté - forcer un refresh immédiat
-                QTimer.singleShot(100, lambda: self.schedule_refresh(force=True))
+                QTimer.singleShot(100, lambda: self.start_refresh_thread())
+
+                
             else:
-                self.clear_all_cards()
+                #self.clear_all_cards()
                 self.status_label.setText("🔌 Aucun périphérique OTP détecté.")
                 self.status_label.show()
+                self.otp_list_layout.addWidget(self.empty_card)
 
     def on_refresh_data_ready(self, generators):
         """Met à jour l'UI avec les nouvelles données"""
-        self.last_successful_refresh = time.time()
         self.device_connected = True
         self.status_label.hide()
         
@@ -284,8 +293,9 @@ class MainWindow(QWidget):
         if reply == QMessageBox.StandardButton.Yes:
             success = self.backend.delete_generator(label)
             if success:
-                # Forcer un refresh pour mettre à jour la liste
-                self.schedule_refresh(force=True)
+                # mettre à jour la liste
+                self.start_refresh_thread()
+                #à faire : cas ou on supprime on meme temps que l'on génère un code (en meme temps que le worker tourne)
             else:
                 error_msg = getattr(self.backend, "last_error", f"Échec de la suppression de '{label}'")
                 QMessageBox.warning(self, "Erreur", error_msg)
