@@ -7,6 +7,7 @@ from fido2.hid import CtapHidDevice, CAPABILITY
 from fido2.ctap import CtapError
 import time
 from base64 import b32decode
+from fido2.pcsc import CtapPcscDevice
 
 OTP_CREATE = 0xB1
 OTP_GENERATE = 0xB2
@@ -17,14 +18,14 @@ ALG_NAME_TO_CODE = {"SHA1": 4, "SHA256": 5, "SHA512": 7}
 TYPE_NAME_TO_CODE = {"HOTP": 1, "TOTP": 2}
 
 OTP_ERROR_CODES = {
-    0x00: ("OTP_OK", "Commande exécutée avec succès"),
-    0x01: ("ERR_INVALID_CMD", "Commande non reconnue"),
-    0xF1: ("OTP_ERR_INVALID_CBOR", "La commande contient un encodage CBOR invalide"),
-    0xF2: ("OTP_ERR_INVALID_COMMAND", "Commande OTP non reconnue"),
-    0xF3: ("OTP_ERR_INVALID_PARAMETER", "Paramètre invalide dans la commande"),
-    0xF4: ("OTP_ERR_GENERATOR_EXISTS", "Un générateur avec ce nom existe déjà"),
-    0xF5: ("OTP_ERR_GENERATOR_NOT_FOUND", "Générateur introuvable"),
-    0xF6: ("OTP_ERR_MEMORY_FULL", "Mémoire pleine, impossible de créer un autre générateur"),
+    0x00: ("OTP_OK", "Command executed successfully"),
+    0x01: ("ERR_INVALID_CMD", "Command not recognized"),
+    0xF1: ("OTP_ERR_INVALID_CBOR", "The command contains invalid CBOR encoding"),
+    0xF2: ("OTP_ERR_INVALID_COMMAND", "Unrecognized OTP command"),
+    0xF3: ("OTP_ERR_INVALID_PARAMETER", "Invalid parameter in command"),
+    0xF4: ("OTP_ERR_GENERATOR_EXISTS", "A generator with this name already exists"),
+    0xF5: ("OTP_ERR_GENERATOR_NOT_FOUND", "Generator not found"),
+    0xF6: ("OTP_ERR_MEMORY_FULL", "Memory full, unable to create another generator"),
 }
 
 class FidoOTPBackend:
@@ -33,7 +34,7 @@ class FidoOTPBackend:
 
     @staticmethod
     def get_error_message(code: int) -> str:
-        return OTP_ERROR_CODES.get(code, (f"Erreur inconnue 0x{code:02X}", "Erreur non documentée"))[1]
+        return OTP_ERROR_CODES.get(code, (f"Unknown error 0x{code:02X}", "Undocumented error"))[1]
 
     def _connect(self):
         # si self.ctap existe déjà, on la réutilise
@@ -41,11 +42,26 @@ class FidoOTPBackend:
             return self.ctap
 
         dev = next(CtapHidDevice.list_devices(), None)
+        if not dev:
+            dev = next(CtapPcscDevice.list_devices(), None)
         if not dev or not (dev.capabilities & CAPABILITY.CBOR):
-            raise RuntimeError("Token FIDO2 non détecté ou incompatible.")
+            raise RuntimeError("🔌 No OTP Device detected.")
         self.ctap = Ctap2(dev)
         return self.ctap
 
+    def ping_device(self) -> bool:
+        with self.lock:
+            try:
+                ctap = self._connect()
+                ctap.send_cbor(OTP_ENUMERATE, {1: 0})
+                return True
+            except CtapError as e:
+                self.last_error = self.get_error_message(e.code)
+                return False
+            except Exception as e:
+                self.ctap = None
+                self.last_error = str(e)
+                return False
 
     def list_generators(self):
         with self.lock:
@@ -54,7 +70,7 @@ class FidoOTPBackend:
                 resp = ctap.send_cbor(OTP_ENUMERATE, {})
                 return resp.get(2, [])
             except CtapError as e:
-                print(f"Erreur CTAP : {e.code:02X} → {self.get_error_message(e.code)}")
+                print(f"CTAP Error : {e.code:02X} → {self.get_error_message(e.code)}")
                 self.last_error = self.get_error_message(e.code)
                 return False
 
@@ -74,7 +90,7 @@ class FidoOTPBackend:
                 resp = ctap.send_cbor(OTP_GENERATE, payload)
                 return resp.get(1, "?")
             except CtapError as e:
-                print(f"Erreur CTAP : {e.code:02X} → {self.get_error_message(e.code)}")
+                print(f"CTAP Error : {e.code:02X} → {self.get_error_message(e.code)}")
                 self.last_error = self.get_error_message(e.code)
                 return False
             except Exception as e:
@@ -90,7 +106,7 @@ class FidoOTPBackend:
                 ctap.send_cbor(OTP_DELETE, payload)
                 return True
             except CtapError as e:
-                print(f"Erreur CTAP : {e.code:02X} → {self.get_error_message(e.code)}")
+                print(f"CTAP Error : {e.code:02X} → {self.get_error_message(e.code)}")
                 self.last_error = self.get_error_message(e.code)
                 return False
             except Exception as e:
@@ -104,7 +120,7 @@ class FidoOTPBackend:
         try:
             secret = b32decode(secret_b32, casefold=True)
         except Exception as e:
-            print(f"Erreur de décodage Base32 : {e}")
+            print(f"Base32 decoding error : {e}")
             return False
 
         payload = {
@@ -129,7 +145,7 @@ class FidoOTPBackend:
                 ctap.send_cbor(OTP_CREATE, payload)
                 return True
             except CtapError as e:
-                print(f"Erreur CTAP : {e.code:02X} → {self.get_error_message(e.code)}")
+                print(f"CTAP Error : {e.code:02X} → {self.get_error_message(e.code)}")
                 self.last_error = self.get_error_message(e.code)
                 return False
             except Exception as e:

@@ -10,6 +10,8 @@ from ui.enroll_widget import EnrollWidget
 from core.fido_backend import FidoOTPBackend
 from core.otp_model import OTPGenerator
 from core.otp_refresh_worker import OTPRefreshWorker
+from core.detection_worker import DetectorWorker
+from ui.header import Header
 
 import time
 
@@ -19,7 +21,7 @@ class MainWindow(QWidget):
         super().__init__()
         self.setWindowTitle("Winkeo/Badgeo OTP Manager")
         self.setWindowIcon(QIcon("images/logo.png"))
-        self.resize(400, 600)
+        self.resize(400, 650)
 
         self.backend = FidoOTPBackend()
         self.generator_widgets = {}
@@ -30,28 +32,14 @@ class MainWindow(QWidget):
         main_layout = QVBoxLayout(self)
         main_layout.addLayout(self.stack)
 
-        self.main_view = QWidget()
+        self.main_view = QWidget(self)
         main_view_layout = QVBoxLayout(self.main_view)
         self.stack.addWidget(self.main_view)
 
         # Header
-        header_widget = QWidget()
-        header_widget.setObjectName("header")
-        header_layout = QHBoxLayout(header_widget)
-        pixmap = QPixmap("images/logo.png")
-        label_logo = QLabel()
-        label_logo.setPixmap(pixmap.scaled(35, 35, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
-        label_logo.setScaledContents(False)
-        label_titre = QLabel("NEOWAVE OTP MANAGER")
-        label_titre.setObjectName("titreApp")
-        header_layout.addStretch()
-        header_layout.addWidget(label_logo)
-        header_layout.addWidget(label_titre)
-        header_layout.addStretch()        
+        header_widget = Header()     
         main_view_layout.addWidget(header_widget)
 
-        header_layout.setContentsMargins(0, 15, 0, 15)
-        header_layout.setSpacing(0)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         main_view_layout.setContentsMargins(0, 0, 0, 0)
@@ -66,7 +54,7 @@ class MainWindow(QWidget):
 
         search_bar = QLineEdit()
         search_bar.setObjectName("searchBar")
-        search_bar.setPlaceholderText("Rechercher un code...")
+        search_bar.setPlaceholderText("Search for a code...")
         search_bar.setClearButtonEnabled(True)
         search_bar.textChanged.connect(self.on_search_text_changed)
         search_bar.setMinimumWidth(250)
@@ -85,7 +73,7 @@ class MainWindow(QWidget):
         self.otp_list_widget.setObjectName("listArea")
         self.otp_list_layout = QVBoxLayout(self.otp_list_widget)
         self.otp_list_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-
+        self.otp_list_layout.setSpacing(10) # espacement entre les cartes 
         scroll_area.setWidget(self.otp_list_widget)
         main_view_layout.addWidget(scroll_area, stretch=1)
 
@@ -110,15 +98,36 @@ class MainWindow(QWidget):
         # Première tentative de connexion
         self.start_refresh_thread()
 
-        # self.empty_card = OTPCard(
-        #     label="Aucune clé détectée",
-        #     code="",
-        #     parameters="Insérez une clé OTP pour commencer.",
-        #     otp_type=2,
-        #     period=30,
-        # )
-        # self.otp_list_layout.addWidget(self.empty_card)
+        self.setup_detection_thread()
 
+    def setup_detection_thread(self):
+        self.detection_thread = QThread()
+        self.detector = DetectorWorker(self.backend)
+        self.detector.moveToThread(self.detection_thread)
+
+        self.detection_thread.started.connect(self.detector.start)
+        self.detection_thread.finished.connect(self.detection_thread.deleteLater)
+        self.detector.device_status.connect(self._handle_detection_result)
+
+        self.detection_thread.start()
+        
+    def _handle_detection_result(self, connected: bool):
+        if connected:
+            self.start_refresh_thread()
+            self.status_label.hide()
+            self.set_cards_online()
+        else:
+            self.status_label.setText("🔌 No OTP Device detected.")
+            self.status_label.show()
+            self.set_cards_offline("Device disconnected")
+
+    def set_cards_offline(self, reason: str):
+        for card in self.generator_widgets.values():
+            card.set_offline(reason)
+
+    def set_cards_online(self):
+        for card in self.generator_widgets.values():
+            card.set_online()
 
     def update_progress_bars(self):
         """Met à jour les barres de progression et force un refresh global quand on passe la seconde 0 du cycle."""
@@ -198,8 +207,9 @@ class MainWindow(QWidget):
                     otp_type=g.otp_type,
                     period=g.period
                 )
-                card.request_code.connect(lambda l=g.label, t=g.otp_type, p=g.period: self.generate_and_update(l, t, p))
+                card.request_code.connect(lambda l=g.label, t=g.otp_type, p=g.period: self.update_hotp(l, t, p))
                 card.delete_requested.connect(self.confirm_delete)
+                card.parameters_requested.connect(lambda l=g.label, t=g.otp_type: self.on_parameters_requested(l, t))
                 self.otp_list_layout.addWidget(card)
                 self.generator_widgets[label] = card
             else:
@@ -215,11 +225,10 @@ class MainWindow(QWidget):
 
     def on_refresh_error(self, message):
         """Gère les erreurs de refresh"""
-        self.status_label.setText(f"❌ Erreur : {message}")
+        self.status_label.setText(f"{message}")
         self.status_label.show()
-        
-        # Ne pas vider les cartes immédiatement - laisser une chance de reconnexion
-        # self.clear_all_cards()
+        self.set_cards_offline("Device disconnected")
+
 
     def clear_all_cards(self):
         """Vide toutes les cartes OTP"""
@@ -227,33 +236,38 @@ class MainWindow(QWidget):
             card.setParent(None)
         self.generator_widgets.clear()
 
-    def generate_and_update(self, label, otp_type, period):
-        """Génère et met à jour un code spécifique (pour HOTP principalement)"""
-
-            
+    def update_hotp(self, label, otp_type, period):
         # Pour HOTP, on fait un appel direct et rapide
         code = self.backend.generate_code(label, otp_type, period)
         if code is None:
-            code = f"Err: {getattr(self.backend, 'last_error', 'inconnue')}"
+            code = f"Err: {getattr(self.backend, 'last_error', 'Unknown')}"
         
         if label in self.generator_widgets:
             self.generator_widgets[label].set_code(code)
-        
-        gens = self.backend.list_generators()
-        if gens:
-            desc = next((g for g in gens if g.get(1) == label), None)
-        if desc:
-            from core.otp_model import OTPGenerator
-            new_params = OTPGenerator(desc).display_parameters()
-            self.generator_widgets[label].parameter_text = new_params
+
+    def on_parameters_requested(self, label: str, otp_type: int):
+        """Affiche les paramètres ; pour HOTP, on les rafraîchit à la demande."""
+        card = self.generator_widgets.get(label)
+        if not card:
+            return
+
+        if otp_type == 1:  # HOTP : rafraîchir les paramètres depuis le device
+            gens = self.backend.list_generators()
+            if gens:
+                desc = next((g for g in gens if g.get(1) == label), None)
+                if desc:
+                    from core.otp_model import OTPGenerator
+                    card.parameter_text = OTPGenerator(desc).display_parameters()
+            # si gens est None/False, on garde l'ancien texte
+        card.show_parameters()
 
 
     def confirm_delete(self, label):
             
         reply = QMessageBox.question(
             self,
-            f"Supprimer {label}",
-            f"Confirmer la suppression du générateur OTP '{label}' ?",
+            f"Delete {label}",
+            f"Are you sure you want to delete the OTP generator '{label}'?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         if reply == QMessageBox.StandardButton.Yes:
@@ -263,19 +277,32 @@ class MainWindow(QWidget):
                 self.start_refresh_thread()
                 #à faire : cas ou on supprime on meme temps que l'on génère un code (en meme temps que le worker tourne)
             else:
-                error_msg = getattr(self.backend, "last_error", f"Échec de la suppression de '{label}'")
-                QMessageBox.warning(self, "Erreur", error_msg)
+                error_msg = getattr(self.backend, "last_error", f"Deletion of '{label}' failed")
+                QMessageBox.warning(self, "Error", error_msg)
 
     def closeEvent(self, event):
         """Nettoyage à la fermeture"""
+        # Arrêt du thread de détection
+        try:
+            if hasattr(self, "detector") and self.detector:
+                # si ton DetectorWorker a un flag _running
+                if hasattr(self.detector, "stop"):
+                    self.detector.stop()
+            if hasattr(self, "detection_thread") and self.detection_thread and self.detection_thread.isRunning():
+                self.detection_thread.quit()
+                self.detection_thread.wait(3000)  # attend max 3s
+        except Exception:
+            pass
+
+        # Arrêt du thread de rafraîchissement si présent
         try:
             if hasattr(self, 'worker_thread') and self.worker_thread and self.worker_thread.isRunning():
                 self.worker_thread.quit()
-                self.worker_thread.wait(3000)  # Timeout de 3 secondes
+                self.worker_thread.wait(3000)  # Timeout 3 secondes
         except Exception:
             pass
-        super().closeEvent(event)
 
+        super().closeEvent(event)
 
 class IconButton(QPushButton):
     def __init__(self, normal_icon, hover_icon, parent=None):

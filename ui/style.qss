@@ -1,4 +1,4 @@
-QWidget#header{
+#header{
     background: #52c5e4;
 }
 
@@ -15,15 +15,14 @@ QLabel#statusKey{
 }
 
 QWidget#listArea{
-    background:rgb(243, 253, 255);
+    background:white;
 }
 
 QWidget#enrolSeach{
-    background:rgb(243, 253, 255);
+    background: white;
 }
 
 QFrame#otpCard{
-    
     border-radius: 10px;
     background: rgb(228, 243, 245);
 }
@@ -59,7 +58,7 @@ QPushButton#enrolButton:focus {
 
 QLabel#codeLabel{
     font-weight: bold;
-    font-size: 25px;
+    font-size: 20px;
 }
 
 QLabel#accountName{
@@ -69,4 +68,93 @@ QLabel#accountName{
 QLabel#issuer{
     font-size: 10px;
     font-style: italic;
+}
+
+QWidget#enrollPanel, QWidget#enrollHeader{
+    background : white;
+}
+
+QLabel#enrollTitle{
+    font-size: 22px;
+    font-weight: bold;
+}
+
+#enrollPanel QLabel{
+    font-size: 14px;
+    color: #555555;
+    font-weight: 500;
+}
+
+#enrollPanel QLineEdit{
+    border: 1px solid #cccccc;
+    border-radius: 5px;
+    padding: 7px;
+    font-size: 13px;
+    background-color: #f7f7f7;
+}
+
+#enrollPanel QLineEdit:hover{
+    border: 1px solid #999999;
+}
+
+#enrollPanel QLineEdit:focus{
+    border: 1px solid #52c5e4;
+    background-color: white;
+}
+
+#parametersPanel {
+    background-color: #f8f9fa;
+    border: 1px solid #dcdcdc;
+    border-radius: 8px;
+}
+
+#parametersPanel QLabel {
+    font-size: 13px;
+    color: #555555;
+    font-weight: 500;
+}
+
+#parametersPanel QComboBox, #parametersPanel QSpinBox {
+    border: 1px solid #c0c0c0;
+    border-radius: 5px;
+    padding: 3px;
+    background-color: white;
+    font-size: 13px;
+    selection-background-color: #52c5e4;
+}
+
+#parametersPanel QComboBox:hover,
+#parametersPanel QSpinBox:hover {
+    border-color: #52c5e4;
+}
+
+#enrollBtn {
+    background-color: #52c5e4;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 15px; 
+    color: white;
+    font-weight: bold;
+    font-size: 15px;
+}
+
+#enrollBtn:hover {
+    background-color: #388d9c;
+}
+
+QPushButton#advancedOptionsBtn {
+    background-color: transparent;
+    border: none;
+    color: #52c5e4;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: left;
+}
+
+QPushButton#advancedOptionsBtn:hover {
+    color: #388d9c; 
+}
+
+QPushButton#advancedOptionsBtn:checked {
+    color: #388d9c;
 }

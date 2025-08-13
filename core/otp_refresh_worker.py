@@ -21,23 +21,9 @@ class OTPRefreshWorker(QObject):
             
             if raw is None:
                 # Erreur de connexion - device probablement déconnecté
-                error_message = getattr(self.backend, "last_error", "Device non détecté")
+                error_message = getattr(self.backend, "last_error", "Device not detected")
                 self.device_status_changed.emit(False)
                 self.error.emit(error_message)
-                return
-            
-            if raw is False:
-                # Erreur CTAP mais device connecté
-                error_message = getattr(self.backend, "last_error", "Erreur CTAP")
-                self.device_status_changed.emit(True)  # Device présent mais erreur
-                self.error.emit(error_message)
-                return
-            
-            # Device connecté et fonctionnel
-            self.device_status_changed.emit(True)
-            
-            if not raw:  # Liste vide
-                self.finished.emit([])
                 return
 
             # Traiter chaque générateur
@@ -49,14 +35,14 @@ class OTPRefreshWorker(QObject):
                     # Générer le code seulement pour les TOTP
                     if generator.otp_type == 2:  # TOTP
                         code = self.backend.generate_code(generator.label, generator.otp_type, generator.period)
-                        generator.code = code if code else "Erreur"
+                        generator.code = code if code else "Error"
                     elif generator.otp_type == 1:  # HOTP
                         generator.code = "●●●●●●"  # Code par défaut pour HOTP
                         
                     result.append(generator)
                 except Exception as e:
                     # Si erreur sur un générateur spécifique, continuer avec les autres
-                    print(f"Erreur pour générateur {g.get(1, 'unknown')}: {e}")
+                    print(f"Error for generator {g.get(1, 'unknown')}: {e}")
                     continue
 
             self.finished.emit(result)
@@ -64,4 +50,4 @@ class OTPRefreshWorker(QObject):
         except Exception as e:
             # Erreur générale - probablement device déconnecté
             self.device_status_changed.emit(False)
-            self.error.emit(f"Erreur générale: {str(e)}")
+            self.error.emit(f"General Error: {str(e)}")

@@ -29,8 +29,8 @@ class ProgressIndicator(QWidget):
         r = h / 2
 
         # Bord arrondi
-        bg_brush = QBrush(QColor("#cceeff"))
-        fill_brush = QBrush(QColor("#36bcff"))
+        bg_brush = QBrush(QColor("#c3e9fc"))
+        fill_brush = QBrush(QColor("#52c5e4"))
 
         # Arrière-plan
         painter.setBrush(bg_brush)
