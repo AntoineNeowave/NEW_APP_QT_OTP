@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QScrollArea, QPushButton, QFrame, QMessageBox, QStackedLayout, QLineEdit, QSizePolicy
 )
 from PyQt6.QtGui import QPixmap, QIcon
-from PyQt6.QtCore import Qt, QTimer, QSize, QThread
+from PyQt6.QtCore import Qt, QTimer, QSize, QThread, QMetaObject
 from ui.otp_card import OTPCard
 from ui.enroll_widget import EnrollWidget
 from core.fido_backend import FidoOTPBackend
@@ -69,6 +69,12 @@ class MainWindow(QWidget):
         enrol_button.clicked.connect(self.switch_to_enroll_view)
         main_view_layout.addWidget(enrol_search_widget)
 
+        #Status présence du device
+        self.status_label = QLabel()
+        self.status_label.setObjectName("statusKey")
+        self.status_label.hide()
+        main_view_layout.addWidget(self.status_label)
+
         # OTP list area
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
@@ -81,11 +87,7 @@ class MainWindow(QWidget):
         scroll_area.setWidget(self.otp_list_widget)
         main_view_layout.addWidget(scroll_area, stretch=1)
 
-        #Status présence du device
-        self.status_label = QLabel()
-        self.status_label.setObjectName("statusKey")
-        self.status_label.hide()
-        main_view_layout.addWidget(self.status_label)
+
 
         # === Vue d'enrôlement ===
         self.enroll_widget = EnrollWidget(self.backend, self)
@@ -110,7 +112,6 @@ class MainWindow(QWidget):
         self.detector.moveToThread(self.detection_thread)
 
         self.detection_thread.started.connect(self.detector.start)
-        self.detection_thread.finished.connect(self.detection_thread.deleteLater)
         self.detector.device_status.connect(self._handle_detection_result)
 
         self.detection_thread.start()
@@ -121,7 +122,7 @@ class MainWindow(QWidget):
             self.status_label.hide()
             self.set_cards_online()
         else:
-            self.status_label.setText("🔌 No OTP Device detected.")
+            self.status_label.setText("⚠️ No OTP Device detected.")
             self.status_label.show()
             self.set_cards_offline("Device disconnected")
 
@@ -267,11 +268,15 @@ class MainWindow(QWidget):
 
 
     def confirm_delete(self, label):
-            
+        if ":" in label:
+            account, issuer = label.split(":", 1)
+        else:
+            account = label
+            issuer = ""
         reply = QMessageBox.question(
             self,
-            f"Delete {label}",
-            f"Are you sure you want to delete the OTP generator '{label}'?",
+            f"Delete {account}",
+            f"Are you sure you want to delete the OTP generator '{account}'?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         if reply == QMessageBox.StandardButton.Yes:
@@ -288,13 +293,21 @@ class MainWindow(QWidget):
         """Nettoyage à la fermeture"""
         # Arrêt du thread de détection
         try:
-            if hasattr(self, "detector") and self.detector:
-                # si ton DetectorWorker a un flag _running
-                if hasattr(self.detector, "stop"):
-                    self.detector.stop()
-            if hasattr(self, "detection_thread") and self.detection_thread and self.detection_thread.isRunning():
+            if getattr(self, "detector", None):
+                # stop + cleanup exécutés DANS le thread du worker
+                QMetaObject.invokeMethod(self.detector, "stop", Qt.ConnectionType.QueuedConnection)
+                QMetaObject.invokeMethod(self.detector, "cleanup", Qt.ConnectionType.QueuedConnection)
+            if getattr(self, "detection_thread", None) and self.detection_thread.isRunning():
+                # 2) Quitter la boucle une fois le timer nettoyé
                 self.detection_thread.quit()
-                self.detection_thread.wait(3000)  # attend max 3s
+                self.detection_thread.wait(3000)
+            # 3) Détruire le worker et le thread côté GUI (ils n’ont plus d’event loop)
+            if getattr(self, "detector", None):
+                self.detector.deleteLater()
+                self.detector = None
+            if getattr(self, "detection_thread", None):
+                self.detection_thread.deleteLater()
+                self.detection_thread = None
         except Exception:
             pass
 

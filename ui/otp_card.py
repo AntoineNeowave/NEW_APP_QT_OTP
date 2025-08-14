@@ -110,8 +110,8 @@ class OTPCard(QFrame):
     def set_offline(self, reason: str = "Disconnected"):
         # Affiche un code neutre et un sous-titre explicite
         self.label_code.setText("●●●●●●")
-        self.account.setText(reason)
-        self.issuer.setText("")
+        self.account_label.setText(reason)
+        self.issuer_label.setText("")
         if self.otp_type == 2:
             self.progress.setVisible(False)
         else:

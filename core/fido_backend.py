@@ -45,7 +45,7 @@ class FidoOTPBackend:
         if not dev:
             dev = next(CtapPcscDevice.list_devices(), None)
         if not dev or not (dev.capabilities & CAPABILITY.CBOR):
-            raise RuntimeError("🔌 No OTP Device detected.")
+            raise RuntimeError("⚠️ No OTP Device detected.")
         self.ctap = Ctap2(dev)
         return self.ctap
 

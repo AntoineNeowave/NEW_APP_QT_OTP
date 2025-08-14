@@ -11,7 +11,9 @@ QLabel#titreApp{
 
 QLabel#statusKey{
     color: red;
-    font-style: italic;
+    background: white;
+    text-align: center;
+    padding: 5px 0px 0px 3px;
 }
 
 QWidget#listArea{
