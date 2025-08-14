@@ -1,0 +1,13 @@
+Type : <class 'fido2.hid.CtapHidDevice'>
+Représentation : CtapHidDevice(b'\\\\?\\hid#vid_1e0d&pid_0013&mi_01#7&78e1737&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}')
+Nom : FIDO Interface
+Chemin : N/A
+Type : <class 'fido2.hid.CtapHidDevice'>
+Représentation : CtapHidDevice(b'\\\\?\\hid#vid_1e0d&pid_0013&mi_01#7&78e1737&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}')
+Nom : FIDO Interface
+Chemin : N/A
+Tentative de connexion au périphérique FIDO2...
+Type : <class 'fido2.hid.CtapHidDevice'>
+Représentation : CtapHidDevice(b'\\\\?\\hid#vid_1e0d&pid_0013&mi_01#7&78e1737&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}')
+Nom : FIDO Interface
+Chemin : N/A

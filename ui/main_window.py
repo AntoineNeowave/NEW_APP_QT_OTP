@@ -53,8 +53,10 @@ class MainWindow(QWidget):
         enrol_search_widget = QWidget()
         enrol_search_widget.setObjectName("enrolSeach")
         enrol_search_layout = QHBoxLayout(enrol_search_widget)
-
-        enrol_button = IconButton("images/add_account.png", "images/add_account_clicked.png")
+        from main import resource_path
+        add_account_path = resource_path("images", "add_account.png")
+        add_account_path_clicked = resource_path("images", "add_account_clicked.png")
+        enrol_button = IconButton(add_account_path, add_account_path_clicked)
         enrol_button.setObjectName("enrolPageButton")
         search_bar = QLineEdit()
         search_bar.setObjectName("searchBar")
@@ -324,8 +326,8 @@ class MainWindow(QWidget):
 class IconButton(QPushButton):
     def __init__(self, normal_icon, hover_icon, size=QSize(30, 30), parent=None):
         super().__init__(parent)
-        self.normal_icon = QIcon(normal_icon)
-        self.hover_icon = QIcon(hover_icon)
+        self.normal_icon = QIcon(str(normal_icon))
+        self.hover_icon = QIcon(str(hover_icon))
         self.setIcon(self.normal_icon)
         self.setIconSize(size)
         self.setFixedSize(size)
