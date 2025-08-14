@@ -198,15 +198,15 @@ QToolButton#advancedOptionsBtn:checked {
     color: #388d9c;
 }
 
-QPushButton#returnButton{
+IconButton{
     background-color: transparent;
     border: none;
 }
 
-QPushButton#returnButton:pressed {
+IconButton:pressed {
     background-color: transparent;
     border: none;
 }
-QPushButton#returnButton:focus {
+IconButton:focus {
     outline: none;
 }

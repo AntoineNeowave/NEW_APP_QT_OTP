@@ -2,6 +2,7 @@
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt
+from ui.ressources import resource_path
 
 class Header(QWidget):
     def __init__(self, parent=None):
@@ -14,8 +15,8 @@ class Header(QWidget):
     
         #layout.setContentsMargins(0, 15, 0, 15)
         layout.setSpacing(0)
-
-        pixmap = QPixmap("images/logo.png")
+        logo_path = resource_path("images", "logo.png")
+        pixmap = QPixmap(str(logo_path))
         label_logo = QLabel()
         label_logo.setPixmap(pixmap.scaled(
             35, 35,

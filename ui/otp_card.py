@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtCore import Qt, pyqtSignal, QSize
 from ui.progress_indicator import ProgressIndicator
+from ui.ressources import resource_path
 
 class OTPCard(QFrame):
     request_code = pyqtSignal(str)  # signal avec le label
@@ -40,7 +41,8 @@ class OTPCard(QFrame):
         self.label_code.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         code_layout = QHBoxLayout()
         code_layout.addWidget(self.label_code)
-        copy_button = QPushButton(QIcon("images/copier.png"), "")
+        copy_button_path = resource_path("images", "copier.png")
+        copy_button = QPushButton(QIcon(str(copy_button_path)), "")
         copy_button.setFixedSize(24, 24)
         copy_button.setFlat(True)
         copy_button.setToolTip("Copy code to clipboard")
@@ -64,7 +66,9 @@ class OTPCard(QFrame):
         self.btn = QPushButton()
         if otp_type == 1:  # HOTP
             from ui.main_window import IconButton
-            self.btn = IconButton("images/refresh.png", "images/refresh_clicked.png", QSize(35, 35))
+            refresh_icon_path = resource_path("images/refresh.png")
+            refresh_icon_clicked_path = resource_path("images/refresh_clicked.png")
+            self.btn = IconButton(refresh_icon_path, refresh_icon_clicked_path, QSize(35, 35))
             self.btn.setFlat(True)
             self.btn.clicked.connect(lambda: self.request_code.emit(self.label_text))
             main_layout.addWidget(self.btn)

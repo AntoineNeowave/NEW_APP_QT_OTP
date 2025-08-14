@@ -9,6 +9,7 @@ import os
 from PyQt6.QtGui import QPixmap, QIcon
 from ui.header import Header
 from PyQt6.QtGui import QValidator, QIcon
+from ui.ressources import resource_path
 
 class EnrollWidget(QWidget):
     seed_enrolled = pyqtSignal()
@@ -31,7 +32,9 @@ class EnrollWidget(QWidget):
         page_header_widget.setObjectName("enrollHeader")
         page_header_layout = QHBoxLayout(page_header_widget)
         from ui.main_window import IconButton
-        back = IconButton("images/left-arrow.png", "images/left-arrow-clicked.png")
+        left_arrow_path = resource_path("images", "left-arrow.png")
+        left_arrow_clicked_path = resource_path("images", "left-arrow-clicked.png")
+        back = IconButton(left_arrow_path, left_arrow_clicked_path)
         back.setObjectName("returnButton")
         back.clicked.connect(self.cancel_requested.emit)
         page_header_layout.addWidget(back, 0, Qt.AlignmentFlag.AlignLeft)
@@ -96,9 +99,12 @@ class EnrollWidget(QWidget):
         self.seed_edit.textChanged.connect(self._field_changed)
         seed_row.addWidget(self.seed_edit)
         from ui.main_window import IconButton
-        gen_btn = IconButton("images/generate.png", "images/generate_clicked.png", QSize(24, 24))
+        generate_icon_path = resource_path("images/generate.png")
+        generate_icon_clicked_path = resource_path("images/generate_clicked.png")
+        gen_btn = IconButton(generate_icon_path, generate_icon_clicked_path, QSize(24, 24))
         gen_btn.setToolTip("Generate a random seed")
         gen_btn.clicked.connect(self._generate_seed)
+        gen_btn.setObjectName("randomSeedBtn")
         seed_row.addWidget(gen_btn)
         seed_layout.addLayout(seed_row)
         content_layout.addWidget(seed_section)
@@ -111,9 +117,12 @@ class EnrollWidget(QWidget):
         self.show_params_btn.setObjectName("advancedOptionsBtn")
         self.show_params_btn.setCheckable(True)
 
-        self.icon_down = QIcon("images/down-arrow.png")
-        self.icon_down_dark = QIcon("images/down-arrow-dark.png")
-        self.icon_up_dark = QIcon("images/up-arrow-dark.png")
+        down_arrow_path = resource_path("images/down-arrow.png")
+        self.icon_down = QIcon(str(down_arrow_path))
+        down_arrow_dark_path = resource_path("images/down-arrow-dark.png")
+        self.icon_down_dark = QIcon(str(down_arrow_dark_path))
+        up_arrow_dark_path = resource_path("images/up-arrow-dark.png")
+        self.icon_up_dark = QIcon(str(up_arrow_dark_path))
         self.show_params_btn.setIcon(self.icon_down)
         self.show_params_btn.installEventFilter(self)
         self.show_params_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)

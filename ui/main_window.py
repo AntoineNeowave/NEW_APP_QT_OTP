@@ -12,6 +12,7 @@ from core.otp_model import OTPGenerator
 from core.otp_refresh_worker import OTPRefreshWorker
 from core.detection_worker import DetectorWorker
 from ui.header import Header
+from ui.ressources import resource_path
 
 import time
 
@@ -20,7 +21,8 @@ class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Winkeo/Badgeo OTP Manager")
-        self.setWindowIcon(QIcon("images/logo.png"))
+        logo_path = resource_path("images", "logo.png")
+        self.setWindowIcon(QIcon(str(logo_path)))
         self.setFixedSize(400, 650)
         flags = self.windowFlags()
         self.setWindowFlags(flags | Qt.WindowType.MSWindowsFixedSizeDialogHint)
@@ -53,7 +55,6 @@ class MainWindow(QWidget):
         enrol_search_widget = QWidget()
         enrol_search_widget.setObjectName("enrolSeach")
         enrol_search_layout = QHBoxLayout(enrol_search_widget)
-        from main import resource_path
         add_account_path = resource_path("images", "add_account.png")
         add_account_path_clicked = resource_path("images", "add_account_clicked.png")
         enrol_button = IconButton(add_account_path, add_account_path_clicked)

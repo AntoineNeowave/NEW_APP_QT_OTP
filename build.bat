@@ -1,2 +1,2 @@
-rem pyinstaller --clean --name NeoOTP --add-data "ui;ui" --add-data "images;images" --onedir --noconsole main.py
-PyInstaller main.py --name NeoOTP --onefile --noconsole --clean --hidden-import fido2.hid --hidden-import fido2.pcsc --hidden-import smartcard --collect-submodules fido2 --collect-binaries hid --collect-binaries smartcard --collect-data smartcard --add-data "ui;ui"  --add-data "images;images"
+rem PyInstaller main.py --name NeoOTP --onefile --noconsole --clean --hidden-import fido2.hid --hidden-import fido2.pcsc --hidden-import smartcard --collect-submodules fido2 --collect-binaries hid --collect-binaries smartcard --collect-data smartcard --add-data "ui;ui"  --add-data "images;images"
+PyInstaller main.py --name NeoOTP --onefile --noconsole --clean --add-data "ui;ui"  --add-data "images;images"
