@@ -20,11 +20,18 @@ class OTPGenerator:
         self.period = data.get(6, 30 if self.otp_type == 2 else None)
 
     def display_parameters(self) -> str:
+        if ":" in self.label:
+            self.account, self.issuer = self.label.split(":", 1)
+        else:
+            self.account = self.label
+            self.issuer = ""
         parts = [
             f"Type : {TYPE_NAME.get(self.otp_type, '?')}",
-            f"User : {self.label}",
-            f"Code length : {self.digits}"
+            f"Account : {self.account}",
             ]
+        if self.issuer:
+            parts.append(f"Issuer : {self.issuer}")
+        parts.append(f"Code length : {self.digits}")
         if self.otp_type == 1:
             counter_value = int.from_bytes(self.counter, 'big') if self.counter else '?'
             parts.append(f"Counter : {counter_value}")

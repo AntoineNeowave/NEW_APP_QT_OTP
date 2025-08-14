@@ -1,7 +1,7 @@
 # ui/main_window.py
 from PyQt6.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QHBoxLayout,
-    QScrollArea, QPushButton, QFrame, QMessageBox, QStackedLayout, QLineEdit
+    QScrollArea, QPushButton, QFrame, QMessageBox, QStackedLayout, QLineEdit, QSizePolicy
 )
 from PyQt6.QtGui import QPixmap, QIcon
 from PyQt6.QtCore import Qt, QTimer, QSize, QThread
@@ -21,7 +21,11 @@ class MainWindow(QWidget):
         super().__init__()
         self.setWindowTitle("Winkeo/Badgeo OTP Manager")
         self.setWindowIcon(QIcon("images/logo.png"))
-        self.resize(400, 650)
+        self.setFixedSize(400, 650)
+        flags = self.windowFlags()
+        self.setWindowFlags(flags | Qt.WindowType.MSWindowsFixedSizeDialogHint)
+
+        # self.resize(400, 650)
 
         self.backend = FidoOTPBackend()
         self.generator_widgets = {}
@@ -50,8 +54,8 @@ class MainWindow(QWidget):
         enrol_search_widget.setObjectName("enrolSeach")
         enrol_search_layout = QHBoxLayout(enrol_search_widget)
 
-        enrol_button = IconButton("images/plus5.png", "images/plus_clicked.png")
-
+        enrol_button = IconButton("images/add_account.png", "images/add_account_clicked.png")
+        enrol_button.setObjectName("enrolPageButton")
         search_bar = QLineEdit()
         search_bar.setObjectName("searchBar")
         search_bar.setPlaceholderText("Search for a code...")
@@ -305,15 +309,14 @@ class MainWindow(QWidget):
         super().closeEvent(event)
 
 class IconButton(QPushButton):
-    def __init__(self, normal_icon, hover_icon, parent=None):
+    def __init__(self, normal_icon, hover_icon, size=QSize(30, 30), parent=None):
         super().__init__(parent)
         self.normal_icon = QIcon(normal_icon)
         self.hover_icon = QIcon(hover_icon)
         self.setIcon(self.normal_icon)
-        self.setIconSize(QSize(30, 30))
-        self.setFixedSize(30, 30)
+        self.setIconSize(size)
+        self.setFixedSize(size)
         self.setFlat(True)
-        self.setObjectName("enrolButton")
         self.is_pressed = False
 
         self.pressed.connect(self.on_pressed)

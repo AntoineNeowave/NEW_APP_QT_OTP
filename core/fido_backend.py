@@ -121,6 +121,7 @@ class FidoOTPBackend:
             secret = b32decode(secret_b32, casefold=True)
         except Exception as e:
             print(f"Base32 decoding error : {e}")
+            self.last_error = str(e)
             return False
 
         payload = {

@@ -1,16 +1,14 @@
 # ui/enroll_widget.py
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QComboBox,
-    QPushButton, QSpinBox, QMessageBox
+    QPushButton, QSpinBox, QMessageBox,QToolButton
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QEvent, QSize
 import base64
 import os
 from PyQt6.QtGui import QPixmap, QIcon
 from ui.header import Header
-from PyQt6.QtGui import QValidator
-from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve
-from PyQt6.QtWidgets import QFormLayout
+from PyQt6.QtGui import QValidator, QIcon
 
 class EnrollWidget(QWidget):
     seed_enrolled = pyqtSignal()
@@ -32,9 +30,9 @@ class EnrollWidget(QWidget):
         page_header_widget = QWidget()
         page_header_widget.setObjectName("enrollHeader")
         page_header_layout = QHBoxLayout(page_header_widget)
-
-        back = QPushButton("←")
-        back.setFixedWidth(30)
+        from ui.main_window import IconButton
+        back = IconButton("images/left-arrow.png", "images/left-arrow-clicked.png")
+        back.setObjectName("returnButton")
         back.clicked.connect(self.cancel_requested.emit)
         page_header_layout.addWidget(back, 0, Qt.AlignmentFlag.AlignLeft)
         page_header_layout.addStretch() # pousse le titre vers le centre
@@ -61,11 +59,12 @@ class EnrollWidget(QWidget):
         account_layout = QVBoxLayout(account_section)
         account_layout.setContentsMargins(0, 0, 0, 0)
         account_layout.setSpacing(4)
-        account_name = QLabel("Account name :")
+        account_name = QLabel("Account name <span style='color:red'>*</span> :")
         account_layout.addWidget(account_name)
         self.account_edit = QLineEdit()
         self.account_edit.setPlaceholderText("Google, GitHub, etc.")
         self.account_edit.setValidator(no_colon_validator)
+        self.account_edit.textChanged.connect(self._field_changed)
         account_layout.addWidget(self.account_edit)
         self.account_edit.setToolTip("Account name should not contain ':'")
         content_layout.addWidget(account_section)
@@ -89,14 +88,15 @@ class EnrollWidget(QWidget):
         seed_layout = QVBoxLayout(seed_section)
         seed_layout.setContentsMargins(0, 0, 0, 0)
         seed_layout.setSpacing(4)
-        seed_label = QLabel("Secret key (Base32) :")
+        seed_label = QLabel("Secret key (Base32) <span style='color:red'>*</span> :")
         seed_layout.addWidget(seed_label)
         seed_row = QHBoxLayout()
         self.seed_edit = QLineEdit()
         self.seed_edit.setPlaceholderText("JBSWY3DPEHPK3PXP...")
+        self.seed_edit.textChanged.connect(self._field_changed)
         seed_row.addWidget(self.seed_edit)
-        gen_btn = QPushButton("🎲")
-        gen_btn.setFixedWidth(40)
+        from ui.main_window import IconButton
+        gen_btn = IconButton("images/generate.png", "images/generate_clicked.png", QSize(24, 24))
         gen_btn.setToolTip("Generate a random seed")
         gen_btn.clicked.connect(self._generate_seed)
         seed_row.addWidget(gen_btn)
@@ -106,9 +106,18 @@ class EnrollWidget(QWidget):
         content_layout.addSpacing(5)
 
         # === Bouton pour afficher/masquer les paramètres ===
-        self.show_params_btn = QPushButton("Advanced options ▼")
+        self.show_params_btn = QToolButton()
+        self.show_params_btn.setText("Advanced options")
         self.show_params_btn.setObjectName("advancedOptionsBtn")
         self.show_params_btn.setCheckable(True)
+
+        self.icon_down = QIcon("images/down-arrow.png")
+        self.icon_down_dark = QIcon("images/down-arrow-dark.png")
+        self.icon_up_dark = QIcon("images/up-arrow-dark.png")
+        self.show_params_btn.setIcon(self.icon_down)
+        self.show_params_btn.installEventFilter(self)
+        self.show_params_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.show_params_btn.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
         self.show_params_btn.clicked.connect(self._toggle_parameters_visibility)
         content_layout.addWidget(self.show_params_btn, alignment=Qt.AlignmentFlag.AlignLeft)
 
@@ -118,7 +127,7 @@ class EnrollWidget(QWidget):
 
         params_layout = QHBoxLayout(self.parameters_panel)
         params_layout.setSpacing(15)
-        params_layout.setContentsMargins(0, 0, 0, 0)
+        #params_layout.setContentsMargins(0, 0, 0, 0)
 
         # === Type OTP ===
         type_section = QWidget()
@@ -126,6 +135,7 @@ class EnrollWidget(QWidget):
         type_layout.setContentsMargins(0, 0, 0, 0)
         type_layout.setSpacing(4)
         type_label = QLabel("OTP Type :")
+        type_label.setWordWrap(True)
         type_layout.addWidget(type_label)
         self.type_combo = QComboBox()
         self.type_combo.addItems(["TOTP", "HOTP"])
@@ -138,6 +148,7 @@ class EnrollWidget(QWidget):
         algo_layout.setContentsMargins(0, 0, 0, 0)
         algo_layout.setSpacing(4)
         algo_label = QLabel("Algorithm :")
+        algo_label.setWordWrap(True)
         algo_layout.addWidget(algo_label)
         self.algo_combo = QComboBox()
         self.algo_combo.addItems(["SHA1", "SHA256", "SHA512"])
@@ -150,6 +161,7 @@ class EnrollWidget(QWidget):
         digits_layout.setContentsMargins(0, 0, 0, 0)
         digits_layout.setSpacing(4)
         digits_label = QLabel("Number of digits :")
+        digits_label.setWordWrap(True)
         digits_layout.addWidget(digits_label)
         self.digits_spin = QSpinBox()
         self.digits_spin.setRange(6, 8)
@@ -163,6 +175,7 @@ class EnrollWidget(QWidget):
         period_counter_layout.setContentsMargins(0, 0, 0, 0)
         period_counter_layout.setSpacing(4)
         self.param_label = QLabel("Timestep (seconds) :")
+        self.param_label.setWordWrap(True)
         period_counter_layout.addWidget(self.param_label)
         self.counter_spin = QSpinBox()
         self.counter_spin.setRange(0, 99999)
@@ -185,13 +198,34 @@ class EnrollWidget(QWidget):
 
         content_layout.addStretch()
 
+    def _field_changed(self, text):
+        widget = self.sender()  
+        if text.strip():
+            widget.setStyleSheet("")
+
     def _toggle_parameters_visibility(self):
         if self.parameters_panel.isHidden():
             self.parameters_panel.show()
-            self.show_params_btn.setText("Advanced options ▲")
+            self.show_params_btn.setIcon(self.icon_up_dark)
         else:
             self.parameters_panel.hide()
-            self.show_params_btn.setText("Advanced options ▼")
+            # Après avoir décoché, on vérifie si la souris est toujours sur le bouton
+            if self.show_params_btn.underMouse():
+                self.show_params_btn.setIcon(self.icon_down_dark)
+            else:
+                self.show_params_btn.setIcon(self.icon_down)
+
+    def eventFilter(self, obj, event):
+        if obj is self.show_params_btn:
+            if event.type() == QEvent.Type.Enter:
+                # Si le bouton n'est pas coché, on met l'icône de survol
+                if not self.show_params_btn.isChecked():
+                    self.show_params_btn.setIcon(self.icon_down_dark)
+            elif event.type() == QEvent.Type.Leave:
+                # Si le bouton n'est pas coché, on remet l'icône de base
+                if not self.show_params_btn.isChecked():
+                    self.show_params_btn.setIcon(self.icon_down)
+        return super().eventFilter(obj, event)
 
     def _update_param_label(self):
         if self.type_combo.currentText() == "TOTP":
@@ -209,6 +243,15 @@ class EnrollWidget(QWidget):
         rand = os.urandom(length.get(algo, 20))
         self.seed_edit.setText(base64.b32encode(rand).decode("utf-8"))
 
+    def is_base32(s: str) -> bool:
+        try:
+            # Essaye de décoder la chaîne (en bytes)
+            base64.b32decode(s.upper(), casefold=True)  
+            return True
+        except Exception:
+            # Si une erreur est levée, ce n'est pas du Base32 valide
+            return False
+    
     def _enroll(self):
         account_name = self.account_edit.text().strip()
         issuer_name = self.issuer_edit.text().strip()
@@ -219,8 +262,17 @@ class EnrollWidget(QWidget):
         param = int(self.period_combo.currentText()) if otp_type == "TOTP" else int(self.counter_spin.value())
         seed = self.seed_edit.text().strip().replace(" ", "")
 
-        if not label or not seed:
-            QMessageBox.warning(self, "Error", "Account name and secret key are required.")
+        if not label :
+            QMessageBox.warning(self, "Error", "Account name is required.")
+            self.account_edit.setStyleSheet("background-color: #ffe4e1;")
+            return
+        if not seed:
+            QMessageBox.warning(self, "Error", "Secret key is required.")
+            self.seed_edit.setStyleSheet("background-color: #ffe4e1;")
+            return
+        if seed and not EnrollWidget.is_base32(seed):
+            QMessageBox.warning(self, "Error", "Secret key must be a valid Base32 string.")
+            self.seed_edit.setStyleSheet("background-color: #ffe4e1;")
             return
 
         success = self.backend.create_generator(

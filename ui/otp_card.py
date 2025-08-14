@@ -29,7 +29,7 @@ class OTPCard(QFrame):
         self.setObjectName("otpCard")
 
         main_layout = QHBoxLayout(self)
-        main_layout.setContentsMargins(5, 5, 5, 5) # marge autour de la carte
+        main_layout.setContentsMargins(5, 5, 15, 5) # marge autour de la carte
         #main_layout.setSpacing(0) # espace entre les widgets à l'intérieur de la carte
         # Labels
         left_widget = QWidget()
@@ -51,8 +51,10 @@ class OTPCard(QFrame):
         code_layout.addStretch()
         self.account_label = QLabel(f"{self.account}")
         self.account_label.setObjectName("accountName")
+        self.account_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self.issuer_label = QLabel(f"{self.issuer}")
         self.issuer_label.setObjectName("issuer")
+        self.issuer_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         left_layout.addWidget(self.account_label)
         left_layout.addWidget(self.issuer_label)
         left_layout.addLayout(code_layout)
@@ -61,15 +63,14 @@ class OTPCard(QFrame):
         main_layout.addStretch()
         self.btn = QPushButton()
         if otp_type == 1:  # HOTP
-            self.btn.setIcon(QIcon("images/refresh.png"))
-            self.btn.setIconSize(QSize(27, 27))
-            self.btn.setFixedSize(27, 27)
+            from ui.main_window import IconButton
+            self.btn = IconButton("images/refresh.png", "images/refresh_clicked.png", QSize(35, 35))
             self.btn.setFlat(True)
             self.btn.clicked.connect(lambda: self.request_code.emit(self.label_text))
             main_layout.addWidget(self.btn)
         else:  # TOTP
             self.progress = ProgressIndicator(period)
-            main_layout.addWidget(self.progress, alignment=Qt.AlignmentFlag.AlignVCenter)
+            main_layout.addWidget(self.progress)
         
         main_layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
@@ -85,19 +86,21 @@ class OTPCard(QFrame):
     def contextMenuEvent(self, event):
         menu = QMenu(self)
 
-        show_params_action = QAction("Show parameters", self)
+        show_params_action = QAction("Show OTP parameters", self)
         show_params_action.triggered.connect(lambda: self.parameters_requested.emit(self.label_text, self.otp_type))
 
-        delete_action = QAction("Delete", self)
+        delete_action = QAction("Delete OTP code", self)
+        delete_action.setObjectName("deleteAction")
         delete_action.triggered.connect(lambda: self.delete_requested.emit(self.label_text))
 
         menu.addAction(show_params_action)
+        menu.addSeparator()
         menu.addAction(delete_action)
         menu.exec(event.globalPos())
 
     def show_parameters(self):
         msg = QMessageBox(self)
-        msg.setWindowTitle(f"Parameters - {self.account}")
+        msg.setWindowTitle(f"Parameters")
         msg.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         msg.setText(self.parameter_text)
         msg.setStandardButtons(QMessageBox.StandardButton.Ok)
