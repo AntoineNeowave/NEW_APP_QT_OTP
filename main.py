@@ -24,6 +24,7 @@ def load_qss_with_images(qss_rel_path=("ui","style.qss")) -> str:
 
 
 if __name__ == "__main__":
+    
     app = QApplication(sys.argv)
     app.setStyleSheet(load_qss_with_images())
     window = MainWindow()

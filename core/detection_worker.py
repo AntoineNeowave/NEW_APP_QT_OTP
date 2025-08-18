@@ -1,5 +1,5 @@
 # core/detection_worker.py
-from PyQt6.QtCore import QObject, pyqtSignal, QTimer, QThread, Qt, pyqtSlot
+from PyQt6.QtCore import QObject, pyqtSignal, QTimer, Qt, pyqtSlot
 
 class DetectorWorker(QObject):
     device_status = pyqtSignal(bool)

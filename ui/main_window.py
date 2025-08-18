@@ -1,14 +1,13 @@
 # ui/main_window.py
 from PyQt6.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QHBoxLayout,
-    QScrollArea, QPushButton, QFrame, QMessageBox, QStackedLayout, QLineEdit, QSizePolicy
+    QScrollArea, QPushButton, QMessageBox, QStackedLayout, QLineEdit
 )
-from PyQt6.QtGui import QPixmap, QIcon
+from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt, QTimer, QSize, QThread, QMetaObject
 from ui.otp_card import OTPCard
 from ui.enroll_widget import EnrollWidget
 from core.fido_backend import FidoOTPBackend
-from core.otp_model import OTPGenerator
 from core.otp_refresh_worker import OTPRefreshWorker
 from core.detection_worker import DetectorWorker
 from ui.header import Header

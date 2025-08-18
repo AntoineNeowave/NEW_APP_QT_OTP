@@ -1,7 +1,7 @@
 # ui/otp_card.py
 # Affiche un compte OTP sous forme de carte avec le code, le label et les paramètres.
 from PyQt6.QtWidgets import (
-    QFrame, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QProgressBar,
+    QFrame, QLabel, QVBoxLayout, QHBoxLayout, QPushButton,
     QMenu, QMessageBox, QApplication, QWidget
 )
 from PyQt6.QtGui import QIcon, QAction

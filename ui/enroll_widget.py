@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, pyqtSignal, QEvent, QSize
 import base64
 import os
-from PyQt6.QtGui import QPixmap, QIcon
+from PyQt6.QtGui import QIcon
 from ui.header import Header
 from PyQt6.QtGui import QValidator, QIcon
 from ui.ressources import resource_path
