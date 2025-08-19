@@ -48,6 +48,6 @@ class OTPRefreshWorker(QObject):
             self.finished.emit(result)
             
         except Exception as e:
-            # Erreur générale - probablement device déconnecté
             self.device_status_changed.emit(False)
-            self.error.emit(f"General Error: {str(e)}")
+            error_message = getattr(self.backend, "last_error", "Device not detected")
+            self.error.emit(error_message)

@@ -1,6 +1,5 @@
-# core/fido_device.py
+# core/fido_backend.py
 
-# Opérations FIDO/OTP,  passerelle thread sécurisée pour les opérations I/O lentes. 
 import threading
 from fido2.ctap2 import Ctap2
 from fido2.hid import CtapHidDevice, CAPABILITY
@@ -30,93 +29,162 @@ OTP_ERROR_CODES = {
 
 class FidoOTPBackend:
     def __init__(self):
-        self.lock = threading.Lock()  # Une commande CTAP à la fois, sinon, crash
+        self.lock = threading.RLock()  # RLock pour éviter les deadlocks
+        self.ctap = None
+        self.device = None
+        self.last_error = None
+        self.connection_valid = False
 
     @staticmethod
     def get_error_message(code: int) -> str:
         return OTP_ERROR_CODES.get(code, (f"Unknown error 0x{code:02X}", "Undocumented error"))[1]
 
-    def _connect(self):
-        # si self.ctap existe déjà, on la réutilise
-        if hasattr(self, "ctap") and self.ctap:
-            return self.ctap
+    def _test_otp_support(self, ctap):
+        """Teste si le device supporte les commandes OTP"""
+        try:
+            ctap.send_cbor(OTP_ENUMERATE, {1: 0})
+            return True
+        except CtapError:
+            return False
+        except Exception:
+            return False
 
-        dev = next(CtapHidDevice.list_devices(), None)
-        if not dev:
-            dev = next(CtapPcscDevice.list_devices(), None)
-        if not dev or not (dev.capabilities & CAPABILITY.CBOR):
-            raise RuntimeError("⚠️ No OTP Device detected.")
-        self.ctap = Ctap2(dev)
-        return self.ctap
+    def _connect(self):
+        """Connexion thread-safe avec validation OTP"""
+        # Si on a déjà une connexion valide, la tester rapidement
+        if self.connection_valid and self.ctap and self.device:
+            try:
+                # Test rapide de la connexion
+                self.ctap.send_cbor(OTP_ENUMERATE, {1: 0})
+                return self.ctap
+            except:
+                # Connexion invalide, on va reconnecter
+                self._cleanup_connection()
+
+        print("Recherche d'un device FIDO2 avec support OTP...")
+        self._cleanup_connection()
+
+        # 1) Test des devices HID
+        try:
+            hid_devs = list(CtapHidDevice.list_devices())
+        except Exception:
+            hid_devs = []
+
+        for dev in hid_devs:
+            try:
+                ctap = Ctap2(dev)
+                if self._test_otp_support(ctap):
+                    self.ctap = ctap
+                    self.device = dev
+                    self.connection_valid = True
+                    self.last_error = None
+                    print(f"Device OTP trouvé : {dev}")
+                    return self.ctap
+                else:
+                    dev.close()
+            except Exception:
+                try: 
+                    dev.close()
+                except: 
+                    pass
+
+        # 2) Test des devices PC/SC
+        try:
+            pcsc_devs = list(CtapPcscDevice.list_devices())
+        except Exception:
+            pcsc_devs = []
+
+        for dev in pcsc_devs:
+            try:
+                ctap = Ctap2(dev)
+                if self._test_otp_support(ctap):
+                    self.ctap = ctap
+                    self.device = dev
+                    self.connection_valid = True
+                    self.last_error = None
+                    print(f"Device OTP trouvé : {dev}")
+                    return self.ctap
+                else:
+                    dev.close()
+            except Exception:
+                try: 
+                    dev.close()
+                except: 
+                    pass
+
+        # Aucun device compatible trouvé
+        raise RuntimeError("⚠️ No OTP Device detected.")
+
+    def _cleanup_connection(self):
+        """Nettoie la connexion actuelle"""
+        self.connection_valid = False
+        if self.device:
+            try:
+                self.device.close()
+            except:
+                pass
+        self.ctap = None
+        self.device = None
+
+    def _execute_command(self, command, payload, operation_name="operation"):
+        """Exécute une commande CTAP avec gestion d'erreur uniforme"""
+        with self.lock:
+            try:
+                ctap = self._connect()
+                result = ctap.send_cbor(command, payload)
+                return True, result
+            except CtapError as e:
+                error_msg = self.get_error_message(e.code)
+                print(f"CTAP Error during {operation_name}: {e.code:02X} → {error_msg}")
+                self.last_error = error_msg
+                # Ne pas invalider la connexion pour les erreurs CTAP logiques
+                return False, None
+            except Exception as e:
+                # Erreur de connexion/communication → invalider la connexion
+                print(f"Connection error during {operation_name}: {e}")
+                self._cleanup_connection()
+                self.last_error = str(e)
+                return False, None
 
     def ping_device(self) -> bool:
-        with self.lock:
-            try:
-                ctap = self._connect()
-                ctap.send_cbor(OTP_ENUMERATE, {1: 0})
-                return True
-            except CtapError as e:
-                self.last_error = self.get_error_message(e.code)
-                return False
-            except Exception as e:
-                self.ctap = None
-                self.last_error = str(e)
-                return False
+        """Test de présence du device"""
+        success, _ = self._execute_command(OTP_ENUMERATE, {1: 0}, "ping")
+        return success
 
     def list_generators(self):
-        with self.lock:
-            try:
-                ctap = self._connect()
-                resp = ctap.send_cbor(OTP_ENUMERATE, {})
-                return resp.get(2, [])
-            except CtapError as e:
-                print(f"CTAP Error : {e.code:02X} → {self.get_error_message(e.code)}")
-                self.last_error = self.get_error_message(e.code)
-                return False
-
-            except Exception as e:
-                self.ctap = None
-                self.last_error = str(e)
-                return None
+        """Liste les générateurs OTP"""
+        success, result = self._execute_command(OTP_ENUMERATE, {}, "list_generators")
+        if success:
+            return result.get(2, [])
+        elif success is False:  # Erreur CTAP
+            return False
+        else:  # Erreur de connexion
+            return None
 
     def generate_code(self, label: str, otp_type: int, period: int = None):
-        with self.lock:
-            try:
-                ctap = self._connect()
-                payload = {1: label}
-                if otp_type == 2:  # TOTP
-                    T = int(time.time()) // (period or 30)
-                    payload[2] = T.to_bytes(8, 'big')
-                resp = ctap.send_cbor(OTP_GENERATE, payload)
-                return resp.get(1, "?")
-            except CtapError as e:
-                print(f"CTAP Error : {e.code:02X} → {self.get_error_message(e.code)}")
-                self.last_error = self.get_error_message(e.code)
-                return False
-            except Exception as e:
-                self.ctap = None
-                self.last_error = str(e)
-                return None
+        """Génère un code OTP"""
+        payload = {1: label}
+        if otp_type == 2:  # TOTP
+            T = int(time.time()) // (period or 30)
+            payload[2] = T.to_bytes(8, 'big')
+        
+        success, result = self._execute_command(OTP_GENERATE, payload, f"generate_code({label})")
+        if success:
+            return result.get(1, "?")
+        elif success is False:  # Erreur CTAP
+            return False
+        else:  # Erreur de connexion
+            return None
 
     def delete_generator(self, label: str) -> bool:
-        with self.lock:
-            try:
-                ctap = self._connect()
-                payload = {1: label}
-                ctap.send_cbor(OTP_DELETE, payload)
-                return True
-            except CtapError as e:
-                print(f"CTAP Error : {e.code:02X} → {self.get_error_message(e.code)}")
-                self.last_error = self.get_error_message(e.code)
-                return False
-            except Exception as e:
-                self.ctap = None
-                self.last_error = str(e)
-                return False
+        """Supprime un générateur"""
+        payload = {1: label}
+        success, _ = self._execute_command(OTP_DELETE, payload, f"delete_generator({label})")
+        return success
 
     def create_generator(self, label: str, otp_type: str, secret_b32: str, algo: str,
                         digits: int = 6, counter: int = None, period: int = None) -> bool:
-
+        """Crée un nouveau générateur"""
         try:
             secret = b32decode(secret_b32, casefold=True)
         except Exception as e:
@@ -140,16 +208,5 @@ class FidoOTPBackend:
         if otp_type == "TOTP" and period is not None:
             payload[6] = period
 
-        with self.lock:
-            try:
-                ctap = self._connect()
-                ctap.send_cbor(OTP_CREATE, payload)
-                return True
-            except CtapError as e:
-                print(f"CTAP Error : {e.code:02X} → {self.get_error_message(e.code)}")
-                self.last_error = self.get_error_message(e.code)
-                return False
-            except Exception as e:
-                self.ctap = None
-                self.last_error = str(e)
-                return False
+        success, _ = self._execute_command(OTP_CREATE, payload, f"create_generator({label})")
+        return success

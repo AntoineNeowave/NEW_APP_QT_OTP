@@ -19,7 +19,7 @@ import time
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Winkeo/Badgeo OTP Manager")
+        self.setWindowTitle("Winkeo/Badgeo OTP Manager - V1.0.0")
         logo_path = resource_path("images", "logo.png")
         self.setWindowIcon(QIcon(str(logo_path)))
         self.setFixedSize(400, 650)
@@ -145,7 +145,7 @@ class MainWindow(QWidget):
             if card.otp_type == 2:  # TOTP seulement
                 card.update_progress_value(now)
                 # Vérifier si on doit rafraîchir le code (nouveau cycle)
-                if card.remaining_seconds <= 0.05 and not needs_refresh:
+                if 0 <= card.remaining_seconds <= 0.01 and not needs_refresh:
                     needs_refresh = True
         
         # Déclencher un refresh si on est en fin de cycle TOTP
@@ -248,7 +248,9 @@ class MainWindow(QWidget):
         code = self.backend.generate_code(label, otp_type, period)
         if code is None:
             code = f"Err: {getattr(self.backend, 'last_error', 'Unknown')}"
-        
+        elif code is False:
+            code = f"Err: {getattr(self.backend, 'last_error', 'Device error')}"
+
         if label in self.generator_widgets:
             self.generator_widgets[label].set_code(code)
 
