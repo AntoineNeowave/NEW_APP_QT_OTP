@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QScrollArea, QPushButton, QMessageBox, QStackedLayout, QLineEdit
 )
 from PyQt6.QtGui import QIcon
-from PyQt6.QtCore import Qt, QTimer, QSize, QThread, QMetaObject
+from PyQt6.QtCore import Qt, QTimer, QSize, QThread, QMetaObject, QMutex
 from ui.otp_card import OTPCard
 from ui.enroll_widget import EnrollWidget
 from core.fido_backend import FidoOTPBackend
@@ -19,7 +19,7 @@ import time
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Winkeo/Badgeo OTP Manager - V1.0.0")
+        self.setWindowTitle("Winkeo/Badgeo OTP Manager - V0.0.2")
         logo_path = resource_path("images", "logo.png")
         self.setWindowIcon(QIcon(str(logo_path)))
         self.setFixedSize(400, 650)
@@ -30,7 +30,9 @@ class MainWindow(QWidget):
 
         self.backend = FidoOTPBackend()
         self.generator_widgets = {}
-        self.worker_thread = None
+
+        self.refresh_mutex = QMutex()
+        self.current_refresh_thread = None
 
         #Pour une interface à onglets
         self.stack = QStackedLayout()
@@ -169,31 +171,40 @@ class MainWindow(QWidget):
 
 
     def start_refresh_thread(self):
-        if hasattr(self, 'worker_thread') and self.worker_thread is not None and self.worker_thread.isRunning():
-            return
 
-        """Lance le worker dans un thread séparé"""
-        self.worker_thread = QThread()
-        self.worker = OTPRefreshWorker(self.backend)
-        self.worker.moveToThread(self.worker_thread)
+        if not self.refresh_mutex.tryLock():
+            return  # Si un rafraîchissement est déjà en cours, on ne fait rien
+        try:
+            if (hasattr(self, 'current_refresh_thread') and 
+                self.current_refresh_thread is not None and 
+                self.current_refresh_thread.isRunning()):
+                return
 
-        self.worker_thread.started.connect(self.worker.run)
-        self.worker.finished.connect(self.on_refresh_data_ready)
-        self.worker.error.connect(self.on_refresh_error)
-        
-        # Nettoyage
-        self.worker.finished.connect(self.worker_thread.quit)
-        self.worker.finished.connect(self.worker.deleteLater)
-        self.worker.error.connect(self.worker_thread.quit)
-        self.worker.error.connect(self.worker.deleteLater)
-        self.worker_thread.finished.connect(self.worker_thread.deleteLater)
-        self.worker_thread.finished.connect(lambda: setattr(self, 'worker_thread', None))
-        self.worker_thread.finished.connect(self.on_worker_finished)
-        
-        self.worker_thread.start()
+            """Lance le worker dans un thread séparé"""
+            self.current_refresh_thread = QThread()
+            self.worker = OTPRefreshWorker(self.backend)
+            self.worker.moveToThread(self.current_refresh_thread)
 
-    def on_worker_finished(self):
+            self.current_refresh_thread.started.connect(self.worker.run)
+            self.worker.finished.connect(self.on_refresh_data_ready)
+            self.worker.error.connect(self.on_refresh_error)
+            self.worker.device_status_changed.connect(self._handle_detection_result)
+            
+            # Nettoyage
+            self.worker.finished.connect(self.current_refresh_thread.quit)
+            self.worker.finished.connect(self.worker.deleteLater)
+            self.worker.error.connect(self.current_refresh_thread.quit)
+            self.worker.error.connect(self.worker.deleteLater)
+            self.current_refresh_thread.finished.connect(self.current_refresh_thread.deleteLater)
+            self.current_refresh_thread.finished.connect(self.on_worker_thread_finished)
+            
+            self.current_refresh_thread.start()
+        finally:
+            self.refresh_mutex.unlock()
+
+    def on_worker_thread_finished(self):
         """Appelé quand le worker se termine"""
+        self.current_refresh_thread = None
 
     def on_refresh_data_ready(self, generators):
         """Met à jour l'UI avec les nouvelles données"""
@@ -247,9 +258,10 @@ class MainWindow(QWidget):
         # Pour HOTP, on fait un appel direct et rapide
         code = self.backend.generate_code(label, otp_type, period)
         if code is None:
-            code = f"Err: {getattr(self.backend, 'last_error', 'Unknown')}"
+            code = f"{getattr(self.backend, 'last_error', 'Unknown')}"
         elif code is False:
-            code = f"Err: {getattr(self.backend, 'last_error', 'Device error')}"
+            # code = f"{getattr(self.backend, 'last_error', 'Device error')}"
+            code = "Plug a device"
 
         if label in self.generator_widgets:
             self.generator_widgets[label].set_code(code)
@@ -317,9 +329,12 @@ class MainWindow(QWidget):
 
         # Arrêt du thread de rafraîchissement si présent
         try:
-            if hasattr(self, 'worker_thread') and self.worker_thread and self.worker_thread.isRunning():
-                self.worker_thread.quit()
-                self.worker_thread.wait(3000)  # Timeout 3 secondes
+            if (hasattr(self, 'current_refresh_thread') and 
+                self.current_refresh_thread is not None and 
+                self.current_refresh_thread.isRunning()):
+
+                self.current_refresh_thread.quit()
+                self.current_refresh_thread.wait(3000)  # Timeout 3 secondes
         except Exception:
             pass
 
