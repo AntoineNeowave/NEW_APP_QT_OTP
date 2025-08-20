@@ -19,7 +19,7 @@ import time
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Winkeo/Badgeo OTP Manager - V0.0.2")
+        self.setWindowTitle("Winkeo/Badgeo OTP Manager - V0.0.3")
         logo_path = resource_path("images", "logo.png")
         self.setWindowIcon(QIcon(str(logo_path)))
         self.setFixedSize(400, 650)

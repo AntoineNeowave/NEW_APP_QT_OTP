@@ -8,6 +8,7 @@ binaries = []
 hiddenimports = ['fido2.hid', 'fido2.pcsc', 'smartcard']
 datas += collect_data_files('smartcard')
 binaries += collect_dynamic_libs('hid')
+binaries += collect_dynamic_libs('hidapi')
 binaries += collect_dynamic_libs('smartcard')
 hiddenimports += collect_submodules('fido2')
 

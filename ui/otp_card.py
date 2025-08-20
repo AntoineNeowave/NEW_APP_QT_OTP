@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (
     QMenu, QMessageBox, QApplication, QWidget
 )
 from PyQt6.QtGui import QIcon, QAction
-from PyQt6.QtCore import Qt, pyqtSignal, QSize
+from PyQt6.QtCore import Qt, pyqtSignal, QSize, QTimer
 from ui.progress_indicator import ProgressIndicator
 from ui.ressources import resource_path
 
@@ -41,15 +41,20 @@ class OTPCard(QFrame):
         self.label_code.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         code_layout = QHBoxLayout()
         code_layout.addWidget(self.label_code)
-        copy_button_path = resource_path("images", "copier.png")
-        copy_button = QPushButton(QIcon(str(copy_button_path)), "")
-        copy_button.setFixedSize(24, 24)
-        copy_button.setFlat(True)
-        copy_button.setToolTip("Copy code to clipboard")
-        copy_button.clicked.connect(lambda: 
-            QApplication.clipboard().setText(self.label_code.text()),
-        )
-        code_layout.addWidget(copy_button)
+        copy_button_path = resource_path("images/copy.png")
+        copy_button_clicked_path = resource_path("images/copy_clicked.png")
+        self.copy_button = QPushButton()
+        from ui.main_window import IconButton
+        self.copy_button = IconButton(copy_button_path, copy_button_clicked_path, QSize(16, 16))
+        self.copy_button.setFixedSize(16, 16)
+        self.copy_button.setFlat(True)
+        self.copy_button.setToolTip("Copy code to clipboard")
+        self.feedback_label = QLabel("Code copied")
+        self.feedback_label.setObjectName("CopiedLabel")
+        self.feedback_label.setVisible(False)
+        self.copy_button.clicked.connect(self.copy_code)
+        code_layout.addWidget(self.copy_button)
+        code_layout.addWidget(self.feedback_label)
         code_layout.addStretch()
         self.account_label = QLabel(f"{self.account}")
         self.account_label.setObjectName("accountName")
@@ -65,7 +70,6 @@ class OTPCard(QFrame):
         main_layout.addStretch()
         self.btn = QPushButton()
         if otp_type == 1:  # HOTP
-            from ui.main_window import IconButton
             refresh_icon_path = resource_path("images/refresh.png")
             refresh_icon_clicked_path = resource_path("images/refresh_clicked.png")
             self.btn = IconButton(refresh_icon_path, refresh_icon_clicked_path, QSize(35, 35))
@@ -77,6 +81,13 @@ class OTPCard(QFrame):
             main_layout.addWidget(self.progress)
         
         main_layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+
+    def copy_code(self):
+        QApplication.clipboard().setText(self.label_code.text())
+        # afficher "Code copied"
+        self.feedback_label.setVisible(True)
+        # cacher après 1 sec
+        QTimer.singleShot(1000, lambda: self.feedback_label.setVisible(False))
 
     def set_code(self, code: str):
         self.label_code.setText(f"{code}")

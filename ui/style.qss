@@ -6,7 +6,6 @@ QLabel#titreApp{
     color: #f8fafc;
     font-weight: bold;
     font-size: 20px;
-    margin-left: 10px;
 }
 
 QLabel#statusKey{
@@ -27,6 +26,12 @@ QWidget#enrolSeach{
 QFrame#otpCard{
     border-radius: 10px;
     background: rgb(228, 243, 245);
+}
+
+QLabel#CopiedLabel{
+    font-size: 10px;
+    color : rgb(137, 137, 137);
+    font-style: italic;
 }
 
 QScrollArea {
@@ -68,7 +73,7 @@ QLabel#accountName{
 }
 
 QLabel#issuer{
-    font-size: 10px;
+    font-size: 11px;
     font-style: italic;
 }
 
