@@ -25,11 +25,11 @@ Lancement: python ./main.py
 
 ### Linux:
 
-### Installation des headers et libs de développement (une seule fois)
-### Ubuntu/Debian :
+#### Installation des headers et libs de développement (une seule fois)
+#### Ubuntu/Debian :
 sudo apt install python3-dev libusb-1.0-0-dev libudev-dev libpcsclite-dev
 
-### CentOS/Fedora :
+#### CentOS/Fedora :
 sudo dnf install python3-devel libusb1-devel libudev-devel pcsc-lite-devel
 
 ### Windows:
@@ -45,10 +45,10 @@ L'executable se trouve dans 'dist'
 ### Linux:
 Libraries système requises
 
-### Ubuntu/Debian (utilisateur final) :
+#### Ubuntu/Debian (utilisateur final) :
 sudo apt install libusb-1.0-0 pcscd libpcsclite1 libhidapi-hidraw0
 
-### CentOS/Fedora (utilisateur final) :
+#### CentOS/Fedora (utilisateur final) :
 sudo dnf install libusb1 pcsc-lite hidapi
 
 ### Windows:
