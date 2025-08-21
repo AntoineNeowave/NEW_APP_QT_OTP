@@ -19,7 +19,7 @@ import time
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Winkeo/Badgeo OTP Manager - V0.0.3")
+        self.setWindowTitle("Winkeo/Badgeo OTP Manager - V0.0.4")
         logo_path = resource_path("images", "logo.png")
         self.setWindowIcon(QIcon(str(logo_path)))
         self.setFixedSize(400, 650)
@@ -99,11 +99,18 @@ class MainWindow(QWidget):
         self.enroll_widget.cancel_requested.connect(self.switch_to_main_view)
         self.stack.addWidget(self.enroll_widget)
 
+        self.last_totp_cycles = {}  # label -> dernier cycle vu
+        self.pending_refresh = False  # Flag pour éviter les refresh multiples
 
         # Timer pour les barres de progression TOTP
         self.progress_timer = QTimer(self)
         self.progress_timer.timeout.connect(self.update_progress_bars)
         self.progress_timer.start(20)
+
+        # Timer séparé pour forcer les refresh périodiques (backup)
+        self.backup_refresh_timer = QTimer(self)
+        self.backup_refresh_timer.timeout.connect(self.force_totp_refresh)
+        self.backup_refresh_timer.start(1000)  # Chaque seconde
 
         # Première tentative de connexion
         self.start_refresh_thread()
@@ -139,15 +146,23 @@ class MainWindow(QWidget):
             card.set_online()
 
     def update_progress_bars(self):
-        """Met à jour les barres de progression et force un refresh global quand on passe la seconde 0 du cycle."""
+        """Met à jour les barres de progression et détecte les nouveaux cycles TOTP"""
         now = time.time()
         needs_refresh = False
         
         for card in self.generator_widgets.values():
             if card.otp_type == 2:  # TOTP seulement
                 card.update_progress_value(now)
-                # Vérifier si on doit rafraîchir le code (nouveau cycle)
-                if 0 <= card.remaining_seconds <= 0.01 and not needs_refresh:
+                
+                # Calculer le cycle actuel
+                current_cycle = int(now // card.period)
+                label = card.label_text
+                
+                # Vérifier si on est dans un nouveau cycle
+                if label not in self.last_totp_cycles:
+                    self.last_totp_cycles[label] = current_cycle
+                elif self.last_totp_cycles[label] != current_cycle:
+                    self.last_totp_cycles[label] = current_cycle
                     needs_refresh = True
         
         # Déclencher un refresh si on est en fin de cycle TOTP
@@ -169,9 +184,32 @@ class MainWindow(QWidget):
         #à faire : cas ou on enroll en meme temps que l'on génère un code (en meme temps que le worker tourne)
         self.switch_to_main_view()
 
+    def force_totp_refresh(self):
+        """Timer de backup pour forcer le refresh des TOTP toutes les secondes"""
+        now = time.time()
+        current_second = int(now)
+        
+        # Vérifier si on a des TOTP qui devraient être rafraîchis
+        for card in self.generator_widgets.values():
+            if card.otp_type == 2:  # TOTP seulement
+                cycle_position = now % card.period
+                
+                # Si on est dans les 2 premières secondes du cycle et pas de refresh récent
+                if cycle_position < 2.0 and not self.pending_refresh:
+                    current_cycle = int(now // card.period)
+                    label = card.label_text
+                    
+                    if (label not in self.last_totp_cycles or 
+                        self.last_totp_cycles[label] != current_cycle):
+                        print(f"[DEBUG] Backup refresh forcé pour {label}")
+                        self.start_refresh_thread()
+                        break
 
     def start_refresh_thread(self):
-
+        if self.pending_refresh:
+            #Refresh déjà en cours, ignoré
+            return
+        
         if not self.refresh_mutex.tryLock():
             return  # Si un rafraîchissement est déjà en cours, on ne fait rien
         try:
@@ -179,6 +217,7 @@ class MainWindow(QWidget):
                 self.current_refresh_thread is not None and 
                 self.current_refresh_thread.isRunning()):
                 return
+            self.pending_refresh = True
 
             """Lance le worker dans un thread séparé"""
             self.current_refresh_thread = QThread()
@@ -193,8 +232,10 @@ class MainWindow(QWidget):
             # Nettoyage
             self.worker.finished.connect(self.current_refresh_thread.quit)
             self.worker.finished.connect(self.worker.deleteLater)
+            self.worker.finished.connect(self.reset_pending_refresh)
             self.worker.error.connect(self.current_refresh_thread.quit)
             self.worker.error.connect(self.worker.deleteLater)
+            self.worker.error.connect(self.reset_pending_refresh)
             self.current_refresh_thread.finished.connect(self.current_refresh_thread.deleteLater)
             self.current_refresh_thread.finished.connect(self.on_worker_thread_finished)
             
@@ -205,6 +246,10 @@ class MainWindow(QWidget):
     def on_worker_thread_finished(self):
         """Appelé quand le worker se termine"""
         self.current_refresh_thread = None
+
+    def reset_pending_refresh(self):
+        """Reset le flag de refresh en cours"""
+        self.pending_refresh = False
 
     def on_refresh_data_ready(self, generators):
         """Met à jour l'UI avec les nouvelles données"""
@@ -230,15 +275,21 @@ class MainWindow(QWidget):
                 card.parameters_requested.connect(lambda l=g.label, t=g.otp_type: self.on_parameters_requested(l, t))
                 self.otp_list_layout.addWidget(card)
                 self.generator_widgets[label] = card
+
+                if g.otp_type == 2:
+                    self.last_totp_cycles[label] = int(time.time() // g.period)
             else:
                 # Mettre à jour le code seulement pour TOTP
                 if g.otp_type == 2:  # TOTP
+                    old_code = self.generator_widgets[label].label_code.text()
                     self.generator_widgets[label].set_code(g.code)
                 # Pour HOTP, ne pas mettre à jour automatiquement
 
         # Supprimer les cartes qui n'existent plus
         for old_label in existing - active:
             card = self.generator_widgets.pop(old_label)
+            if old_label in self.last_totp_cycles:
+                del self.last_totp_cycles[old_label]
             card.setParent(None)
 
     def on_refresh_error(self, message):

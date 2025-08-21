@@ -19,7 +19,7 @@
 ### MacOS:
 ...
 
-Lancement: python ./main.py
+### Lancement: python ./main.py
 
 ## Générer un executable:
 
