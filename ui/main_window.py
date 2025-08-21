@@ -19,14 +19,12 @@ import time
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Winkeo/Badgeo OTP Manager - V0.0.4")
+        self.setWindowTitle("Winkeo/Badgeo OTP Manager - V0.0.5")
         logo_path = resource_path("images", "logo.png")
         self.setWindowIcon(QIcon(str(logo_path)))
         self.setFixedSize(400, 650)
         flags = self.windowFlags()
         self.setWindowFlags(flags | Qt.WindowType.MSWindowsFixedSizeDialogHint)
-
-        # self.resize(400, 650)
 
         self.backend = FidoOTPBackend()
         self.generator_widgets = {}
@@ -34,7 +32,7 @@ class MainWindow(QWidget):
         self.refresh_mutex = QMutex()
         self.current_refresh_thread = None
 
-        #Pour une interface à onglets
+        # Pour une interface à onglets
         self.stack = QStackedLayout()
         main_layout = QVBoxLayout(self)
         main_layout.addLayout(self.stack)
@@ -73,7 +71,7 @@ class MainWindow(QWidget):
         enrol_button.clicked.connect(self.switch_to_enroll_view)
         main_view_layout.addWidget(enrol_search_widget)
 
-        #Status présence du device
+        # Status présence du device
         self.status_label = QLabel()
         self.status_label.setObjectName("statusKey")
         self.status_label.hide()
@@ -91,8 +89,6 @@ class MainWindow(QWidget):
         scroll_area.setWidget(self.otp_list_widget)
         main_view_layout.addWidget(scroll_area, stretch=1)
 
-
-
         # === Vue d'enrôlement ===
         self.enroll_widget = EnrollWidget(self.backend, self)
         self.enroll_widget.seed_enrolled.connect(self.on_enroll_success)
@@ -101,6 +97,8 @@ class MainWindow(QWidget):
 
         self.last_totp_cycles = {}  # label -> dernier cycle vu
         self.pending_refresh = False  # Flag pour éviter les refresh multiples
+        self.operation_in_progress = False  # Flag pour les opérations utilisateur
+        self.operation_timer = None  # Timer pour les opérations en attente
 
         # Timer pour les barres de progression TOTP
         self.progress_timer = QTimer(self)
@@ -115,6 +113,7 @@ class MainWindow(QWidget):
         # Première tentative de connexion
         self.start_refresh_thread()
 
+        #Detection des devices
         self.setup_detection_thread()
 
     def setup_detection_thread(self):
@@ -147,6 +146,10 @@ class MainWindow(QWidget):
 
     def update_progress_bars(self):
         """Met à jour les barres de progression et détecte les nouveaux cycles TOTP"""
+        # Ne pas déclencher de refresh auto pendant une opération utilisateur
+        if self.operation_in_progress:
+            return
+            
         now = time.time()
         needs_refresh = False
         
@@ -165,8 +168,8 @@ class MainWindow(QWidget):
                     self.last_totp_cycles[label] = current_cycle
                     needs_refresh = True
         
-        # Déclencher un refresh si on est en fin de cycle TOTP
-        if needs_refresh:
+        # Déclencher refresh si nouveau cycle détecté
+        if needs_refresh and not self.pending_refresh:
             self.start_refresh_thread()
         
     def on_search_text_changed(self, text):
@@ -180,14 +183,49 @@ class MainWindow(QWidget):
         self.stack.setCurrentWidget(self.main_view)
 
     def on_enroll_success(self):
+        """Appelé après un enrôlement réussi"""
+        self.operation_in_progress = True
+        
+        # Attendre que les refresh en cours se terminent
+        if self.pending_refresh:
+            # Arrêter l'ancien timer s'il existe
+            if self.operation_timer:
+                self.operation_timer.stop()
+                self.operation_timer.deleteLater()
+            
+            # Créer un timer pour attendre
+            self.operation_timer = QTimer()
+            self.operation_timer.setSingleShot(True)
+            self.operation_timer.timeout.connect(self._complete_enroll_operation)
+            self.operation_timer.start(100)  # Vérifier toutes les 100ms
+        else:
+            self._complete_enroll_operation()
+
+    def _complete_enroll_operation(self):
+        """Finalise l'opération d'enrôlement"""
+        if self.pending_refresh:
+            # Encore en cours, re-programmer
+            if self.operation_timer:
+                self.operation_timer.stop()
+                self.operation_timer.deleteLater()
+            
+            self.operation_timer = QTimer()
+            self.operation_timer.setSingleShot(True)
+            self.operation_timer.timeout.connect(self._complete_enroll_operation)
+            self.operation_timer.start(100)
+            return
+            
         self.start_refresh_thread()
-        #à faire : cas ou on enroll en meme temps que l'on génère un code (en meme temps que le worker tourne)
+        QTimer.singleShot(500, self._reset_operation_flag)  # Reset après 500ms
         self.switch_to_main_view()
 
     def force_totp_refresh(self):
         """Timer de backup pour forcer le refresh des TOTP toutes les secondes"""
+        # Ne pas forcer pendant une opération utilisateur
+        if self.operation_in_progress:
+            return
+            
         now = time.time()
-        current_second = int(now)
         
         # Vérifier si on a des TOTP qui devraient être rafraîchis
         for card in self.generator_widgets.values():
@@ -201,13 +239,11 @@ class MainWindow(QWidget):
                     
                     if (label not in self.last_totp_cycles or 
                         self.last_totp_cycles[label] != current_cycle):
-                        print(f"[DEBUG] Backup refresh forcé pour {label}")
                         self.start_refresh_thread()
                         break
 
     def start_refresh_thread(self):
         if self.pending_refresh:
-            #Refresh déjà en cours, ignoré
             return
         
         if not self.refresh_mutex.tryLock():
@@ -281,7 +317,6 @@ class MainWindow(QWidget):
             else:
                 # Mettre à jour le code seulement pour TOTP
                 if g.otp_type == 2:  # TOTP
-                    old_code = self.generator_widgets[label].label_code.text()
                     self.generator_widgets[label].set_code(g.code)
                 # Pour HOTP, ne pas mettre à jour automatiquement
 
@@ -298,7 +333,6 @@ class MainWindow(QWidget):
         self.status_label.show()
         self.set_cards_offline("Device disconnected")
 
-
     def clear_all_cards(self):
         """Vide toutes les cartes OTP"""
         for card in self.generator_widgets.values():
@@ -311,7 +345,6 @@ class MainWindow(QWidget):
         if code is None:
             code = f"{getattr(self.backend, 'last_error', 'Unknown')}"
         elif code is False:
-            # code = f"{getattr(self.backend, 'last_error', 'Device error')}"
             code = "Plug a device"
 
         if label in self.generator_widgets:
@@ -333,31 +366,86 @@ class MainWindow(QWidget):
             # si gens est None/False, on garde l'ancien texte
         card.show_parameters()
 
-
     def confirm_delete(self, label):
+        """Confirmation et suppression d'un générateur"""
         if ":" in label:
             account, issuer = label.split(":", 1)
         else:
             account = label
             issuer = ""
+            
         reply = QMessageBox.question(
             self,
             f"Delete {account}",
             f"Are you sure you want to delete the OTP generator '{account}'?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
+        
         if reply == QMessageBox.StandardButton.Yes:
-            success = self.backend.delete_generator(label)
-            if success:
-                # mettre à jour la liste
-                self.start_refresh_thread()
-                #à faire : cas ou on supprime on meme temps que l'on génère un code (en meme temps que le worker tourne)
+            self.operation_in_progress = True
+            self.pending_delete_label = label
+            
+            # Attendre que les refresh en cours se terminent
+            if self.pending_refresh:
+                # Arrêter l'ancien timer s'il existe
+                if self.operation_timer:
+                    self.operation_timer.stop()
+                    self.operation_timer.deleteLater()
+                
+                # Créer un timer pour attendre
+                self.operation_timer = QTimer()
+                self.operation_timer.setSingleShot(True)
+                self.operation_timer.timeout.connect(self._complete_delete_operation)
+                self.operation_timer.start(100)
             else:
-                error_msg = getattr(self.backend, "last_error", f"Deletion of '{label}' failed")
-                QMessageBox.warning(self, "Error", error_msg)
+                self._complete_delete_operation()
 
+    def _complete_delete_operation(self):
+        """Finalise l'opération de suppression"""
+        if self.pending_refresh:
+            # Encore en cours, re-programmer
+            if self.operation_timer:
+                self.operation_timer.stop()
+                self.operation_timer.deleteLater()
+            
+            self.operation_timer = QTimer()
+            self.operation_timer.setSingleShot(True)
+            self.operation_timer.timeout.connect(self._complete_delete_operation)
+            self.operation_timer.start(100)
+            return
+            
+        label = self.pending_delete_label
+        
+        success = self.backend.delete_generator(label)
+        if success:
+            # Nettoyer le tracking du cycle supprimé
+            if label in self.last_totp_cycles:
+                del self.last_totp_cycles[label]
+            
+            self.start_refresh_thread()
+            QTimer.singleShot(500, self._reset_operation_flag)  # Reset après 500ms
+        else:
+            error_msg = getattr(self.backend, "last_error", f"Deletion of '{label}' failed")
+            QMessageBox.warning(self, "Error", error_msg)
+            self._reset_operation_flag()
+
+    def _reset_operation_flag(self):
+        """Reset le flag d'opération en cours"""
+        self.operation_in_progress = False
+        
+        # Nettoyer le timer d'opération s'il existe
+        if self.operation_timer:
+            self.operation_timer.stop()
+            self.operation_timer.deleteLater()
+            self.operation_timer = None
+        
     def closeEvent(self, event):
         """Nettoyage à la fermeture"""
+        # Arrêter les timers
+        if self.operation_timer:
+            self.operation_timer.stop()
+            self.operation_timer.deleteLater()
+            
         # Arrêt du thread de détection
         try:
             if getattr(self, "detector", None):
@@ -368,7 +456,7 @@ class MainWindow(QWidget):
                 # 2) Quitter la boucle une fois le timer nettoyé
                 self.detection_thread.quit()
                 self.detection_thread.wait(3000)
-            # 3) Détruire le worker et le thread côté GUI (ils n’ont plus d’event loop)
+            # 3) Détruire le worker et le thread côté GUI (ils n'ont plus d'event loop)
             if getattr(self, "detector", None):
                 self.detector.deleteLater()
                 self.detector = None

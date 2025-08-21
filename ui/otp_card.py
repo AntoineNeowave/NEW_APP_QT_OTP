@@ -26,6 +26,7 @@ class OTPCard(QFrame):
         self.period = period
         self.remaining_seconds = 0
         self.parameter_text = parameters
+        self.code = code
 
         self.setObjectName("otpCard")
 
@@ -36,7 +37,7 @@ class OTPCard(QFrame):
         left_widget = QWidget()
         left_widget.setFixedWidth(200)
         left_layout = QVBoxLayout(left_widget)
-        self.label_code = QLabel(f"{code}")
+        self.label_code = QLabel()
         self.label_code.setObjectName("codeLabel")
         self.label_code.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         code_layout = QHBoxLayout()
@@ -81,16 +82,36 @@ class OTPCard(QFrame):
             main_layout.addWidget(self.progress)
         
         main_layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+        self.set_code(self.code)
+
+    def format_code(self, code):
+        code = str(code)
+        if len(code) == 6:
+            return code[:3] + " " + code[3:]
+        elif len(code) == 7:
+            return code[:4] + " " + code[4:]
+        elif len(code) == 8:
+            return code[:4] + " " + code[4:]
+        else:
+            return code  # on retourne le code tel quel pour les autres tailles
 
     def copy_code(self):
-        QApplication.clipboard().setText(self.label_code.text())
+        code_with_spaces = self.label_code.text()
+        code_without_spaces = code_with_spaces.replace(" ", "")
+        QApplication.clipboard().setText(code_without_spaces)
         # afficher "Code copied"
         self.feedback_label.setVisible(True)
         # cacher après 1 sec
         QTimer.singleShot(1000, lambda: self.feedback_label.setVisible(False))
 
     def set_code(self, code: str):
-        self.label_code.setText(f"{code}")
+        if "●" in code:
+            self.label_code.setText(code)
+            self.copy_button.setVisible(False)
+        else:
+            formatted_code = self.format_code(code)
+            self.label_code.setText(formatted_code)
+            self.copy_button.setVisible(True)
 
     def update_progress_value(self, current_time):
         """Met à jour la barre de progression pour TOTP"""

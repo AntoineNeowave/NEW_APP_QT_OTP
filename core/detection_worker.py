@@ -4,7 +4,7 @@ from PyQt6.QtCore import QObject, pyqtSignal, QTimer, Qt, pyqtSlot
 class DetectorWorker(QObject):
     device_status = pyqtSignal(bool)
     
-    def __init__(self, backend, interval=5000):
+    def __init__(self, backend, interval=6000):
         super().__init__()
         self.backend = backend
         self.interval = interval
