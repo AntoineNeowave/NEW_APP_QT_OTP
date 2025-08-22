@@ -50,6 +50,7 @@ class OTPCard(QFrame):
         self.copy_button.setFixedSize(16, 16)
         self.copy_button.setFlat(True)
         self.copy_button.setToolTip("Copy code to clipboard")
+        self.copy_button.setVisible(False)
         self.feedback_label = QLabel("Code copied")
         self.feedback_label.setObjectName("CopiedLabel")
         self.feedback_label.setVisible(False)
@@ -146,6 +147,7 @@ class OTPCard(QFrame):
     def set_offline(self, reason: str = "Disconnected"):
         # Affiche un code neutre et un sous-titre explicite
         self.label_code.setText("●●●●●●")
+        self.copy_button.setVisible(False)
         self.account_label.setText(reason)
         self.issuer_label.setText("")
         if self.otp_type == 2:

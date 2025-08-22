@@ -38,13 +38,10 @@ class ProgressIndicator(QWidget):
         painter.drawRoundedRect(0, 0, w, h, r, r)
 
         # Remplissage progressif
-        progress = 1.0 - (self.remaining_seconds / self.period)
-        progress = max(0.0, min(1.0, progress))
-
-        fill_width = int(w * progress)
-        if fill_width > 0:
-            painter.setBrush(fill_brush)
-            painter.drawRoundedRect(0, 0, fill_width, h, r, r)
+        fill_ratio = self.remaining_seconds / self.period
+        fill_width = int(w * fill_ratio)
+        painter.setBrush(fill_brush)
+        painter.drawRoundedRect(0, 0, int(fill_width), h, r, r)
 
 
         painter.end()

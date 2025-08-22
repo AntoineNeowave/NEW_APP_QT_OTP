@@ -326,6 +326,7 @@ class MainWindow(QWidget):
             if old_label in self.last_totp_cycles:
                 del self.last_totp_cycles[old_label]
             card.setParent(None)
+            card.deleteLater()
 
     def on_refresh_error(self, message):
         """Gère les erreurs de refresh"""
@@ -337,6 +338,7 @@ class MainWindow(QWidget):
         """Vide toutes les cartes OTP"""
         for card in self.generator_widgets.values():
             card.setParent(None)
+            card.deleteLater()
         self.generator_widgets.clear()
 
     def update_hotp(self, label, otp_type, period):

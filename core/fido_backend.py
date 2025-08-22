@@ -139,7 +139,7 @@ class FidoOTPBackend:
                 self.last_error = error_msg
                 # Ne pas invalider la connexion pour les erreurs CTAP logiques
                 return False, None
-            except Exception as e:
+            except (Exception, RuntimeError) as e:
                 # Erreur de connexion/communication → invalider la connexion
                 print(f"Connection error during {operation_name}: {e}")
                 self._cleanup_connection()

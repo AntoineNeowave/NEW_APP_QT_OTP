@@ -207,6 +207,18 @@ class EnrollWidget(QWidget):
 
         content_layout.addStretch()
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.seed_edit.clear()
+        self.issuer_edit.clear()
+        self.account_edit.clear()
+        self.type_combo.setCurrentIndex(0)
+        self.algo_combo.setCurrentIndex(0)
+        self.period_combo.setCurrentIndex(0)
+        self.counter_spin.setValue(0)
+        self.digits_spin.setValue(6)
+        self.parameters_panel.hide()
+
     def _field_changed(self, text):
         widget = self.sender()  
         if text.strip():
