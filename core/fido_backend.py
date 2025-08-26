@@ -64,57 +64,36 @@ class FidoOTPBackend:
         print("Recherche d'un device FIDO2 avec support OTP...")
         self._cleanup_connection()
 
-        # 1) Test des devices HID
-        try:
-            hid_devs = list(CtapHidDevice.list_devices())
-        except Exception:
-            hid_devs = []
-
-        for dev in hid_devs:
-            try:
-                ctap = Ctap2(dev)
-                if self._test_otp_support(ctap):
-                    self.ctap = ctap
-                    self.device = dev
-                    self.connection_valid = True
-                    self.last_error = None
-                    print(f"Device OTP trouvé : {dev}")
-                    return self.ctap
-                else:
+        # HID d’abord
+        hid_devs = list(CtapHidDevice.list_devices() or [])
+        if hid_devs:
+            for dev in hid_devs:
+                try:
+                    ctap = Ctap2(dev)
+                    if self._test_otp_support(ctap):
+                        self.ctap, self.device = ctap, dev
+                        self.connection_valid = True
+                        return self.ctap
+                except Exception:
                     dev.close()
-            except Exception:
-                try: 
-                    dev.close()
-                except: 
-                    pass
+                    self.ctap = None
 
-        # 2) Test des devices PC/SC
-        try:
-            pcsc_devs = list(CtapPcscDevice.list_devices())
-        except Exception:
-            pcsc_devs = []
-
-        for dev in pcsc_devs:
-            try:
-                ctap = Ctap2(dev)
-                if self._test_otp_support(ctap):
-                    self.ctap = ctap
-                    self.device = dev
-                    self.connection_valid = True
-                    self.last_error = None
-                    print(f"Device OTP trouvé : {dev}")
-                    return self.ctap
-                else:
+        # Si aucun HID valide → PCSC
+        pcsc_devs = list(CtapPcscDevice.list_devices() or [])
+        if pcsc_devs:
+            for dev in pcsc_devs:
+                try:
+                    ctap = Ctap2(dev)
+                    if self._test_otp_support(ctap):
+                        self.ctap, self.device = ctap, dev
+                        self.connection_valid = True
+                        return self.ctap
+                except Exception:
                     dev.close()
-            except Exception:
-                try: 
-                    dev.close()
-                except: 
-                    pass
+                    self.ctap = None
 
-        # Aucun device compatible trouvé
         raise RuntimeError("⚠️ No OTP Device detected.")
-
+    
     def _cleanup_connection(self):
         """Nettoie la connexion actuelle"""
         self.connection_valid = False
@@ -125,6 +104,7 @@ class FidoOTPBackend:
                 pass
         self.ctap = None
         self.device = None
+        time.sleep(0.2)
 
     def _execute_command(self, command, payload, operation_name="operation"):
         """Exécute une commande CTAP avec gestion d'erreur uniforme"""
