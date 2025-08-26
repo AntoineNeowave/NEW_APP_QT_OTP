@@ -35,7 +35,7 @@ class OTPCard(QFrame):
         #main_layout.setSpacing(0) # espace entre les widgets à l'intérieur de la carte
         # Labels
         left_widget = QWidget()
-        left_widget.setFixedWidth(200)
+        left_widget.setFixedWidth(250)
         left_layout = QVBoxLayout(left_widget)
         self.label_code = QLabel()
         self.label_code.setObjectName("codeLabel")
@@ -64,8 +64,8 @@ class OTPCard(QFrame):
         self.issuer_label = QLabel(f"{self.issuer}")
         self.issuer_label.setObjectName("issuer")
         self.issuer_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        left_layout.addWidget(self.account_label)
         left_layout.addWidget(self.issuer_label)
+        left_layout.addWidget(self.account_label)
         left_layout.addLayout(code_layout)
 
         main_layout.addWidget(left_widget)

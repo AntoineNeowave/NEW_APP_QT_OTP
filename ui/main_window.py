@@ -347,7 +347,7 @@ class MainWindow(QWidget):
         if code is None:
             code = f"{getattr(self.backend, 'last_error', 'Unknown')}"
         elif code is False:
-            code = "Plug a device"
+            code = "Device unplugged"
 
         if label in self.generator_widgets:
             self.generator_widgets[label].set_code(code)

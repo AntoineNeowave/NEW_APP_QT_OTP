@@ -57,6 +57,21 @@ class EnrollWidget(QWidget):
         
         no_colon_validator = NoColonValidator()
 
+        # === Issuer du compte ===
+        issuer_section = QWidget()
+        issuer_layout = QVBoxLayout(issuer_section)
+        issuer_layout.setContentsMargins(0, 0, 0, 0)
+        issuer_layout.setSpacing(4)
+        issuer_name = QLabel("Issuer :")
+        issuer_layout.addWidget(issuer_name)
+        self.issuer_edit = QLineEdit()
+        self.issuer_edit.setPlaceholderText("Google, GitHub, etc.")
+        self.issuer_edit.setValidator(no_colon_validator)
+        self.issuer_edit.setToolTip("Issuer name should not contain ':'")
+        self.issuer_edit.setMaxLength(24)
+        issuer_layout.addWidget(self.issuer_edit)
+        content_layout.addWidget(issuer_section)
+
         # === Nom du compte ===
         account_section = QWidget()
         account_layout = QVBoxLayout(account_section)
@@ -65,26 +80,13 @@ class EnrollWidget(QWidget):
         account_name = QLabel("Account name <span style='color:red'>*</span> :")
         account_layout.addWidget(account_name)
         self.account_edit = QLineEdit()
-        self.account_edit.setPlaceholderText("Google, GitHub, etc.")
+        self.account_edit.setPlaceholderText("user@example.com")
         self.account_edit.setValidator(no_colon_validator)
         self.account_edit.textChanged.connect(self._field_changed)
-        account_layout.addWidget(self.account_edit)
+        self.account_edit.setMaxLength(32)
         self.account_edit.setToolTip("Account name should not contain ':'")
+        account_layout.addWidget(self.account_edit)
         content_layout.addWidget(account_section)
-
-        # === Issuer du compte ===
-        issuer_section = QWidget()
-        issuer_layout = QVBoxLayout(issuer_section)
-        issuer_layout.setContentsMargins(0, 0, 0, 0)
-        issuer_layout.setSpacing(4)
-        issuer_name = QLabel("Issuer name :")
-        issuer_layout.addWidget(issuer_name)
-        self.issuer_edit = QLineEdit()
-        self.issuer_edit.setPlaceholderText("user@example.com")
-        self.issuer_edit.setValidator(no_colon_validator)
-        self.issuer_edit.setToolTip("Issuer name should not contain ':'")
-        issuer_layout.addWidget(self.issuer_edit)
-        content_layout.addWidget(issuer_section)
 
         # === Secret (seed) ===
         seed_section = QWidget()
@@ -283,7 +285,7 @@ class EnrollWidget(QWidget):
         param = int(self.period_combo.currentText()) if otp_type == "TOTP" else int(self.counter_spin.value())
         seed = self.seed_edit.text().strip().replace(" ", "")
 
-        if not label :
+        if not account_name :
             QMessageBox.warning(self, "Error", "Account name is required.")
             self.account_edit.setStyleSheet("background-color: #ffe4e1;")
             return

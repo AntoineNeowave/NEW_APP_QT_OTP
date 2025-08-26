@@ -21,8 +21,9 @@ class FileLockSingleton:
         
         if self._check_existing_instance():
             print("❌ Instance déjà détectée")
-            self._show_already_running_message()
-            sys.exit(1)
+            # Au lieu du warning, on sort silencieusement
+            # L'instance existante va automatiquement revenir au premier plan
+            sys.exit(0)
         
         # Créer le fichier de verrouillage
         self._create_lock()
@@ -45,9 +46,11 @@ class FileLockSingleton:
                 pid = int(content)
                 print(f"PID trouvé dans lock: {pid}")
                 
-                # Vérifier si le processus existe (cross-platform)
+                # Vérifier si le processus existe
                 if self._process_exists(pid):
                     print("Processus existe encore")
+                    # Essayer de ramener au premier plan via signal ou autre
+                    self._try_bring_to_front(pid)
                     return True
                 else:
                     print("Processus mort - suppression lock")
@@ -56,7 +59,6 @@ class FileLockSingleton:
                     
         except Exception as e:
             print(f"Erreur lecture lock: {e}")
-            # Fichier corrompu, le supprimer
             try:
                 os.remove(self.lock_file)
             except:
@@ -64,22 +66,80 @@ class FileLockSingleton:
             return False
     
     def _process_exists(self, pid):
-        """Vérifie si un processus existe (cross-platform)"""
+        """Vérifie si un processus existe"""
         try:
             if sys.platform == "win32":
                 import ctypes
                 kernel32 = ctypes.windll.kernel32
-                handle = kernel32.OpenProcess(0x400, False, pid)  # PROCESS_QUERY_INFORMATION
+                handle = kernel32.OpenProcess(0x400, False, pid)
                 if handle:
                     kernel32.CloseHandle(handle)
                     return True
                 return False
             else:
-                # Unix/Linux/Mac
                 os.kill(pid, 0)
                 return True
         except:
             return False
+    
+    def _try_bring_to_front(self, pid):
+        """Essaie de ramener la fenêtre au premier plan (cross-platform)"""
+        try:
+            if sys.platform == "win32":
+                # Windows
+                import ctypes
+                from ctypes import wintypes
+                
+                def enum_windows_callback(hwnd, windows):
+                    if ctypes.windll.user32.IsWindowVisible(hwnd):
+                        length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
+                        if length > 0:
+                            buffer = ctypes.create_unicode_buffer(length + 1)
+                            ctypes.windll.user32.GetWindowTextW(hwnd, buffer, length + 1)
+                            if "NeoOTP" in buffer.value or "Winkeo" in buffer.value:
+                                ctypes.windll.user32.SetForegroundWindow(hwnd)
+                                ctypes.windll.user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+                                return False
+                    return True
+                
+                EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
+                ctypes.windll.user32.EnumWindows(EnumWindowsProc(enum_windows_callback), 0)
+                
+            elif sys.platform == "darwin":
+                # macOS
+                import subprocess
+                try:
+                    # Chercher l'app par nom et la ramener au premier plan
+                    subprocess.run([
+                        "osascript", "-e", 
+                        'tell application "System Events" to set frontmost of every process whose name contains "Python" to true'
+                    ], check=False, capture_output=True)
+                except:
+                    pass
+                    
+            else:
+                # Linux/Unix
+                import subprocess
+                try:
+                    # Essayer avec wmctrl si disponible
+                    result = subprocess.run(["which", "wmctrl"], capture_output=True)
+                    if result.returncode == 0:
+                        subprocess.run([
+                            "wmctrl", "-a", "NeoOTP"
+                        ], check=False, capture_output=True)
+                    else:
+                        # Fallback: essayer avec xdotool
+                        result = subprocess.run(["which", "xdotool"], capture_output=True)
+                        if result.returncode == 0:
+                            subprocess.run([
+                                "xdotool", "search", "--name", "NeoOTP", "windowactivate"
+                            ], check=False, capture_output=True)
+                except:
+                    pass
+                    
+        except Exception as e:
+            print(f"Erreur remise au premier plan: {e}")
+            # Pas grave, on continue quand même
     
     def _create_lock(self):
         """Crée le fichier de verrouillage"""
@@ -89,30 +149,6 @@ class FileLockSingleton:
         except Exception as e:
             print(f"Erreur création lock: {e}")
             sys.exit(1)
-    
-    def _show_already_running_message(self):
-        """Affiche le message d'instance déjà en cours"""
-        try:
-            app = QApplication.instance()
-            if app is None:
-                app = QApplication(sys.argv)
-                temp_app = True
-            else:
-                temp_app = False
-            
-            QMessageBox.warning(
-                None,
-                "NeoOTP already running",
-                "NeoOTP application is already running.\n\n"
-                "Check the notification area or close the existing instance."
-            )
-            
-            if temp_app:
-                app.processEvents()
-                time.sleep(1)
-                
-        except Exception as e:
-            print(f"Erreur affichage message: {e}")
     
     def cleanup(self):
         """Nettoie le fichier de verrouillage"""
@@ -145,7 +181,7 @@ def load_qss_with_images(qss_rel_path=("ui","style.qss")) -> str:
 
 def main():    
 
-    singleton = FileLockSingleton("NeoOTP_V0.0.3")
+    singleton = FileLockSingleton("NeoOTP")
 
     app = QApplication(sys.argv)    
     app.setStyleSheet(load_qss_with_images())    

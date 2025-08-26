@@ -69,12 +69,12 @@ QLabel#codeLabel{
 }
 
 QLabel#accountName{
-    font-size: 15px;
+    font-size: 12px;
 }
 
 QLabel#issuer{
-    font-size: 11px;
-    font-style: italic;
+    font-size: 15px;
+    font-weight: 550;
 }
 
 QWidget#enrollPanel, QWidget#enrollHeader{
