@@ -34,7 +34,7 @@ class OTPGenerator:
         parts.append(f"Code length : {self.digits}")
         if self.otp_type == 1:
             counter_value = int.from_bytes(self.counter, 'big') if self.counter else '?'
-            parts.append(f"Counter : {counter_value-1}")
+            parts.append(f"Counter : {counter_value}")
         elif self.otp_type == 2:
             parts.append(f"Timestep : {self.period} seconds")
         algo_name = ALG_CODE_TO_NAME.get(self.alg, f"Unknown({self.alg})")
