@@ -45,8 +45,10 @@ class FidoOTPBackend:
             ctap.send_cbor(OTP_ENUMERATE, {1: 0})
             return True
         except CtapError:
+            print(f"[DEBUG] CTAP Error during test_otp_support")
             return False
         except Exception:
+            print(f"[DEBUG] Exception Error during test_otp_support")
             return False
 
     def _connect(self):
@@ -84,11 +86,11 @@ class FidoOTPBackend:
                     return self.ctap
                 else:
                     print(f"[DEBUG] Device HID {i} ne supporte pas OTP")
-                    dev.close()
+                    self._cleanup_connection()
             except Exception as e:
                 print(f"[DEBUG] Erreur avec device HID {i}: {e}")
                 try: 
-                    dev.close()
+                    self._cleanup_connection()
                 except Exception as close_e: 
                     print(f"[DEBUG] Erreur fermeture device HID {i}: {close_e}")
 
@@ -114,16 +116,17 @@ class FidoOTPBackend:
                     return self.ctap
                 else:
                     print(f"[DEBUG] Device PCSC {i} ne supporte pas OTP")
-                    dev.close()
+                    self._cleanup_connection()
             except Exception as e:
                 print(f"[DEBUG] Erreur avec device PCSC {i}: {e}")
                 try: 
-                    dev.close()
+                    self._cleanup_connection()
                 except Exception as close_e: 
                     print(f"[DEBUG] Erreur fermeture device PCSC {i}: {close_e}")
 
         # Aucun device compatible trouvé
         print("[DEBUG] Aucun device OTP trouvé")
+        self._cleanup_connection()
         raise RuntimeError("⚠️ No OTP Device detected.")
 
     def _cleanup_connection(self):
@@ -158,6 +161,12 @@ class FidoOTPBackend:
                 self.last_error = error_msg
                 # Ne pas invalider la connexion pour les erreurs CTAP logiques
                 return False, None
+            except (OSError, IOError, ConnectionError) as e:
+                # Erreur de communication/USB
+                print(f"Communication error during {operation_name}: {e}")
+                self._cleanup_connection()
+                self.last_error = "Device communication error"
+                return False, None
             except (Exception, RuntimeError) as e:
                 # Erreur de connexion/communication → invalider la connexion
                 print(f"[DEBUG] Exception/RuntimeError during {operation_name}: {type(e).__name__}: {e}")
@@ -172,7 +181,7 @@ class FidoOTPBackend:
         return success
 
     def list_generators(self, index=0, count=None):
-        """Liste les générateurs OTP"""
+        """Liste les générateurs OTP (23 max)"""
         params = {1: index}
         if count is not None:
             params[2] = count
@@ -190,13 +199,13 @@ class FidoOTPBackend:
             return None
         
     def get_all_generators(self):
-        """Récupère tous les générateurs OTP - exactement comme dans le worker original"""
+        """Récupère tous les générateurs OTP"""
         try:
             all_generators = []
 
             # 1. Récupérer le nombre total (exactement comme dans votre worker)
             total = self.list_generators(index=0, count=0)
-            if total is None or not isinstance(total, int):
+            if total is None or total is False or not isinstance(total, int):
                 return None
 
             batch_size = 23

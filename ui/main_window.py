@@ -242,13 +242,12 @@ class MainWindow(QWidget):
                         self.start_refresh_thread()
                         break
 
-    def start_refresh_thread(self):
-        if self.pending_refresh:
-            return
-        
+    def start_refresh_thread(self):     
         if not self.refresh_mutex.tryLock():
             return  # Si un rafraîchissement est déjà en cours, on ne fait rien
         try:
+            if self.pending_refresh:
+                return
             if (hasattr(self, 'current_refresh_thread') and 
                 self.current_refresh_thread is not None and 
                 self.current_refresh_thread.isRunning()):
