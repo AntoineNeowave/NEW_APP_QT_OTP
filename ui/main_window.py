@@ -1,10 +1,10 @@
 # ui/main_window.py
 from PyQt6.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QHBoxLayout,
-    QScrollArea, QPushButton, QMessageBox, QStackedLayout, QLineEdit
+    QScrollArea, QPushButton, QMessageBox, QStackedLayout, QLineEdit, QGraphicsOpacityEffect
 )
 from PyQt6.QtGui import QIcon
-from PyQt6.QtCore import Qt, QTimer, QSize, QThread, QMetaObject, QMutex
+from PyQt6.QtCore import Qt, QTimer, QSize, QThread, QMetaObject, QMutex, QPropertyAnimation, QEasingCurve
 from ui.otp_card import OTPCard
 from ui.enroll_widget import EnrollWidget
 from core.fido_backend import FidoOTPBackend
@@ -359,13 +359,19 @@ class MainWindow(QWidget):
             return
 
         if otp_type == 1:  # HOTP : rafraîchir les paramètres depuis le device
-            gens = self.backend.list_generators()
-            if gens:
-                desc = next((g for g in gens if g.get(1) == label), None)
-                if desc:
-                    from core.otp_model import OTPGenerator
-                    card.parameter_text = OTPGenerator(desc).display_parameters()
-            # si gens est None/False, on garde l'ancien texte
+            try:
+                all_generators = self.backend.get_all_generators()
+                
+                if all_generators:  # Liste non vide
+                    # Chercher le générateur spécifique
+                    found_generator = next((g for g in all_generators if g.get(1) == label), None)
+                    if found_generator:
+                        from core.otp_model import OTPGenerator
+                        card.parameter_text = OTPGenerator(found_generator).display_parameters()
+                
+            except Exception as e:
+                print(f"Erreur lors du rafraîchissement des paramètres HOTP pour {label}: {e}")
+
         card.show_parameters()
 
     def confirm_delete(self, label):
@@ -417,13 +423,37 @@ class MainWindow(QWidget):
             return
             
         label = self.pending_delete_label
-        
         success = self.backend.delete_generator(label)
+
         if success:
+            # Retire la card visuellement instantanément
+            if label in self.generator_widgets:
+                card = self.generator_widgets.pop(label)
+            card.setEnabled(False)
+            # Animation d'opacité
+            self.opacity_effect = QGraphicsOpacityEffect()
+            card.setGraphicsEffect(self.opacity_effect)
+            self.opacity_animation = QPropertyAnimation(self.opacity_effect, b"opacity")
+            self.opacity_animation.setDuration(250)  # 250ms
+            self.opacity_animation.setStartValue(1.0)
+            self.opacity_animation.setEndValue(0.0)
+            self.opacity_animation.setEasingCurve(QEasingCurve.Type.OutQuad)
+            # Animation de hauteur
+            self.height_animation = QPropertyAnimation(card, b"maximumHeight")
+            self.height_animation.setDuration(250)
+            self.height_animation.setStartValue(card.height())
+            self.height_animation.setEndValue(0)
+            self.height_animation.setEasingCurve(QEasingCurve.Type.OutQuad)
+            self.height_animation.finished.connect(lambda: card.setParent(None))      
+            # Démarrer les animations
+            self.opacity_animation.start()
+            self.height_animation.start()
+
+            #card.setParent(None)
             # Nettoyer le tracking du cycle supprimé
             if label in self.last_totp_cycles:
                 del self.last_totp_cycles[label]
-            
+            # Refresh listing affichage
             self.start_refresh_thread()
             QTimer.singleShot(500, self._reset_operation_flag)  # Reset après 500ms
         else:

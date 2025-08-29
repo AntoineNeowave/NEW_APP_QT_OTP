@@ -49,38 +49,81 @@ class FidoOTPBackend:
         except Exception:
             return False
 
-    def _connect_once(self):
-        """Retourne un Ctap2 connecté sur un device OTP (ouvre/ferme à chaque appel)."""
-        # 1) HID
-        try:
-            for dev in CtapHidDevice.list_devices():
-                try:
-                    ctap = Ctap2(dev)
-                    if self._test_otp_support(ctap):
-                        return ctap, dev
-                    else:
-                        dev.close()
-                except Exception:
-                    try: dev.close()
-                    except: pass
-        except Exception:
-            pass
+    def _connect(self):
+        """Connexion thread-safe avec validation OTP"""
+        # Si on a déjà une connexion valide, la tester rapidement
+        if self.connection_valid and self.ctap and self.device:
+            try:
+                return self.ctap
+            except Exception as e:
+                print(f"[DEBUG] connexion existante échoué: {e}")
+                self._cleanup_connection()
 
-        # 2) PCSC
-        try:
-            for dev in CtapPcscDevice.list_devices():
-                try:
-                    ctap = Ctap2(dev)
-                    if self._test_otp_support(ctap):
-                        return ctap, dev
-                    else:
-                        dev.close()
-                except Exception:
-                    try: dev.close()
-                    except: pass
-        except Exception:
-            pass
+        print("Recherche d'un device FIDO2 avec support OTP...")
+        self._cleanup_connection()
 
+        # 1) Test des devices HID
+        try:
+            hid_devs = list(CtapHidDevice.list_devices())
+            print(f"[DEBUG] {len(hid_devs)} devices HID trouvés")
+        except Exception as e:
+            print(f"[DEBUG] Erreur énumération HID: {e}")
+            hid_devs = []
+
+        for i, dev in enumerate(hid_devs):
+            try:
+                print(f"[DEBUG] Test device HID {i}: {dev}")
+                ctap = Ctap2(dev)
+                print(f"[DEBUG] CTAP2 créé pour device HID {i}")
+                if self._test_otp_support(ctap):
+                    self.ctap = ctap
+                    self.device = dev
+                    self.connection_valid = True
+                    self.last_error = None
+                    print(f"Device OTP trouvé : {dev}")
+                    return self.ctap
+                else:
+                    print(f"[DEBUG] Device HID {i} ne supporte pas OTP")
+                    dev.close()
+            except Exception as e:
+                print(f"[DEBUG] Erreur avec device HID {i}: {e}")
+                try: 
+                    dev.close()
+                except Exception as close_e: 
+                    print(f"[DEBUG] Erreur fermeture device HID {i}: {close_e}")
+
+        # 2) Test des devices PC/SC
+        try:
+            pcsc_devs = list(CtapPcscDevice.list_devices())
+            print(f"[DEBUG] {len(pcsc_devs)} devices PCSC trouvés")
+        except Exception as e:
+            print(f"[DEBUG] Erreur énumération PCSC: {e}")
+            pcsc_devs = []
+
+        for i, dev in enumerate(pcsc_devs):
+            try:
+                print(f"[DEBUG] Test device PCSC {i}: {dev}")
+                ctap = Ctap2(dev)
+                print(f"[DEBUG] CTAP2 créé pour device PCSC {i}")
+                if self._test_otp_support(ctap):
+                    self.ctap = ctap
+                    self.device = dev
+                    self.connection_valid = True
+                    self.last_error = None
+                    print(f"Device OTP trouvé : {dev}")
+                    return self.ctap
+                else:
+                    print(f"[DEBUG] Device PCSC {i} ne supporte pas OTP")
+                    dev.close()
+            except Exception as e:
+                print(f"[DEBUG] Erreur avec device PCSC {i}: {e}")
+                try: 
+                    dev.close()
+                except Exception as close_e: 
+                    print(f"[DEBUG] Erreur fermeture device PCSC {i}: {close_e}")
+
+        # Aucun device compatible trouvé
+        print("[DEBUG] Aucun device OTP trouvé")
         raise RuntimeError("⚠️ No OTP Device detected.")
 
     def _cleanup_connection(self):
@@ -98,45 +141,86 @@ class FidoOTPBackend:
         self.device = None
 
     def _execute_command(self, command, payload, operation_name="operation"):
-        """Exécute une commande CTAP (ouvre/ferme le device à chaque fois)."""
+        """Exécute une commande CTAP avec gestion d'erreur uniforme"""
         with self.lock:
-            for attempt in range(3):
-                ctap = None
-                dev = None
-                try:
-                    ctap, dev = self._connect_once()
-                    result = ctap.send_cbor(command, payload)
-                    return True, result
-                except CtapError as e:
-                    self.last_error = self.get_error_message(e.code)
-                    return False, None
-                except Exception as e:
-                    if attempt < 2:
-                        print(f"Erreur {operation_name} (essai {attempt+1}/3): {e}")
-                        time.sleep(0.5)
-                        continue
-                    else:
-                        print(f"Échec final {operation_name}: {e}")
-                        self.last_error = str(e)
-                        return False, None
-                finally:
-                    if dev:
-                        try: dev.close()
-                        except: pass
-            return False, None
+            print(f"[DEBUG] _execute_command: {operation_name}")
+            try:
+                print("[DEBUG] Appel _connect()")
+                ctap = self._connect()
+                print(f"[DEBUG] _connect() OK, ctap={ctap}")
+                print(f"[DEBUG] Envoi commande CBOR: cmd=0x{command:02X}")
+                result = ctap.send_cbor(command, payload)
+                print(f"[DEBUG] Commande CBOR OK, result keys: {result.keys() if result else 'None'}")
+                return True, result
+            except CtapError as e:
+                error_msg = self.get_error_message(e.code)
+                print(f"[DEBUG] CTAP Error during {operation_name}: {e.code:02X} → {error_msg}")
+                self.last_error = error_msg
+                # Ne pas invalider la connexion pour les erreurs CTAP logiques
+                return False, None
+            except (Exception, RuntimeError) as e:
+                # Erreur de connexion/communication → invalider la connexion
+                print(f"[DEBUG] Exception/RuntimeError during {operation_name}: {type(e).__name__}: {e}")
+                print("[DEBUG] Invalidation de la connexion")
+                self._cleanup_connection()
+                self.last_error = str(e)
+                return False, None
+
     def ping_device(self) -> bool:
         """Test de présence du device"""
         success, _ = self._execute_command(OTP_ENUMERATE, {1: 0}, "ping")
         return success
 
-    def list_generators(self):
+    def list_generators(self, index=0, count=None):
         """Liste les générateurs OTP"""
-        success, result = self._execute_command(OTP_ENUMERATE, {}, "list_generators")
+        params = {1: index}
+        if count is not None:
+            params[2] = count
+
+        success, result = self._execute_command(OTP_ENUMERATE, params, operation_name="list_generators")
+
         if success:
-            return result.get(2, [])
+            # Si count=0, renvoyer juste le nombre total
+            if params.get(2, None) == 0:
+                return result.get(1, 0)
+            return result.get(2, [])  # otpGenerators
         elif success is False:  # Erreur CTAP
             return False
         else:  # Erreur de connexion
+            return None
+        
+    def get_all_generators(self):
+        """Récupère tous les générateurs OTP - exactement comme dans le worker original"""
+        try:
+            all_generators = []
+
+            # 1. Récupérer le nombre total (exactement comme dans votre worker)
+            total = self.list_generators(index=0, count=0)
+            if total is None or not isinstance(total, int):
+                return None
+
+            batch_size = 23
+            index = 0
+
+            # 2. Lire par batchs (exactement comme dans votre worker)
+            while index < total:
+                count = min(batch_size, total - index)
+                batch = self.list_generators(index=index, count=count)
+                if batch is None:
+                    return None
+                elif batch is False:
+                    # Erreur CTAP sur ce batch, continuer avec le batch suivant
+                    index += count
+                    continue
+
+                all_generators.extend(batch)
+                index += len(batch)
+
+            return all_generators
+            
+        except Exception as e:
+            print(f"Error in get_all_generators: {e}")
+            self.last_error = str(e)
             return None
 
     def generate_code(self, label: str, otp_type: int, period: int = None):

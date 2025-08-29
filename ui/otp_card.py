@@ -35,7 +35,7 @@ class OTPCard(QFrame):
         #main_layout.setSpacing(0) # espace entre les widgets à l'intérieur de la carte
         # Labels
         left_widget = QWidget()
-        left_widget.setFixedWidth(250)
+        left_widget.setFixedWidth(230)
         left_layout = QVBoxLayout(left_widget)
         self.label_code = QLabel()
         self.label_code.setObjectName("codeLabel")

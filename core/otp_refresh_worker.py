@@ -16,19 +16,24 @@ class OTPRefreshWorker(QObject):
     def run(self):
         """Execute le refresh avec gestion de la connexion/déconnexion"""
         try:
-            # Tenter de lister les générateurs
-            raw = self.backend.list_generators()
+            all_generators = self.backend.get_all_generators()
             
-            if raw is None:
-                # Erreur de connexion - device probablement déconnecté
-                error_message = getattr(self.backend, "last_error", "Device not detected")
+            if all_generators is None:
+                # Erreur de connexion
                 self.device_status_changed.emit(False)
+                error_message = getattr(self.backend, "last_error", "Device not detected")
+                self.error.emit(error_message)
+                return
+            elif all_generators is False:
+                # Erreur CTAP
+                self.device_status_changed.emit(False)
+                error_message = getattr(self.backend, "last_error", "CTAP error")
                 self.error.emit(error_message)
                 return
 
             # Traiter chaque générateur
             result = []
-            for g in raw:
+            for g in all_generators:
                 try:
                     generator = OTPGenerator(g)
                     
