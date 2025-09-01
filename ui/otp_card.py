@@ -84,14 +84,10 @@ class OTPCard(QFrame):
 
         # === Partie droite compacte ===
         right_layout = QVBoxLayout()
-        right_layout.setContentsMargins(0, 30, 0, 0)  # marge haute ajustée
-        right_layout.setSpacing(10)  # espace entre bloc principal et boutons
+        right_layout.setContentsMargins(0, 30, 0, 0)
+        right_layout.setSpacing(15)  # espace modéré entre les éléments
 
-        # Bloc "haut" uniforme (progress ou bouton HOTP)
-        top_container = QWidget()
-        top_layout = QVBoxLayout(top_container)
-        top_layout.setContentsMargins(0, 0, 0, 0)
-        top_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # On ajoute un spacing en haut pour pousser légèrement vers le bas
 
         if otp_type == 1:  # HOTP
             refresh_icon_path = resource_path("images/refresh.png")
@@ -99,15 +95,10 @@ class OTPCard(QFrame):
             self.btn = IconButton(refresh_icon_path, refresh_icon_clicked_path, QSize(35, 35))
             self.btn.setFlat(True)
             self.btn.clicked.connect(lambda: self.request_code.emit(self.label_text))
-            top_layout.addWidget(self.btn)
+            right_layout.addWidget(self.btn, alignment=Qt.AlignmentFlag.AlignRight)
         else:  # TOTP
             self.progress = ProgressIndicator(period)
-            top_layout.addWidget(self.progress)
-
-        # Forcer une hauteur identique du bloc (pour uniformiser TOTP/HOTP)
-        top_container.setFixedHeight(35)
-
-        right_layout.addWidget(top_container, alignment=Qt.AlignmentFlag.AlignRight)
+            right_layout.addWidget(self.progress, alignment=Qt.AlignmentFlag.AlignRight)
 
         # Boutons info + delete en bas à droite
         info_button_path = resource_path("images/info.png")
@@ -126,7 +117,8 @@ class OTPCard(QFrame):
         self.delete_button.setToolTip("Delete OTP account")
         self.delete_button.clicked.connect(lambda: self.delete_requested.emit(self.label_text))
 
-        # Ligne du bas pour info/delete
+
+        # Boutons info + delete juste en dessous
         bottom_buttons = QHBoxLayout()
         bottom_buttons.setSpacing(6)
         bottom_buttons.addStretch()
@@ -134,11 +126,10 @@ class OTPCard(QFrame):
         bottom_buttons.addWidget(self.delete_button)
 
         right_layout.addLayout(bottom_buttons)
-
-        # Aligner la colonne de droite au centre vertical
+    
+        # Aligner toute la colonne verticalement au centre de la carte
         main_layout.addLayout(right_layout)
         main_layout.setAlignment(right_layout, Qt.AlignmentFlag.AlignVCenter)
-
 
         self.set_code(self.code)
 
