@@ -182,8 +182,14 @@ QLabel#enrollTitle{
     font-size: 15px;
 }
 
-#enrollBtn:hover {
+#enrollBtn:hover:enabled {
     background-color: #388d9c;
+}
+
+#enrollBtn:disabled {
+    background-color: #8db5c7;  /* Bleu original désaturé */
+    color: #ffffff;             /* Texte blanc */
+    cursor: not-allowed;
 }
 
 QToolButton#advancedOptionsBtn {

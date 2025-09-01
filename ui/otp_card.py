@@ -42,6 +42,8 @@ class OTPCard(QFrame):
         self.label_code.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         code_layout = QHBoxLayout()
         code_layout.addWidget(self.label_code)
+
+        # Bouton copier
         copy_button_path = resource_path("images/copy.png")
         copy_button_clicked_path = resource_path("images/copy_clicked.png")
         self.copy_button = QPushButton()
@@ -57,6 +59,27 @@ class OTPCard(QFrame):
         self.copy_button.clicked.connect(self.copy_code)
         code_layout.addWidget(self.copy_button)
         code_layout.addWidget(self.feedback_label)
+
+        # Bouton information (paramètres)
+        info_button_path = resource_path("images/info.png") 
+        info_button_clicked_path = resource_path("images/info_clicked.png")
+        self.info_button = IconButton(info_button_path, info_button_clicked_path, QSize(16, 16))
+        self.info_button.setFixedSize(16, 16)
+        self.info_button.setFlat(True)
+        self.info_button.setToolTip("Show OTP parameters")
+        self.info_button.clicked.connect(lambda: self.parameters_requested.emit(self.label_text, self.otp_type))
+        code_layout.addWidget(self.info_button)
+        
+        # Bouton suppression
+        delete_button_path = resource_path("images/trash.png") 
+        delete_button_clicked_path = resource_path("images/trash_clicked.png")
+        self.delete_button = IconButton(delete_button_path, delete_button_clicked_path, QSize(16, 16))
+        self.delete_button.setFixedSize(16, 16)
+        self.delete_button.setFlat(True)
+        self.delete_button.setToolTip("Delete OTP account")
+        self.delete_button.clicked.connect(lambda: self.delete_requested.emit(self.label_text))
+        code_layout.addWidget(self.delete_button)
+
         code_layout.addStretch()
         self.account_label = QLabel(f"{self.account}")
         self.account_label.setObjectName("accountName")
@@ -148,6 +171,8 @@ class OTPCard(QFrame):
         # Affiche un code neutre et un sous-titre explicite
         self.label_code.setText("●●●●●●")
         self.copy_button.setVisible(False)
+        self.info_button.setVisible(False)
+        self.delete_button.setVisible(False)
         self.account_label.setText(reason)
         self.issuer_label.setText("")
         if self.otp_type == 2:
@@ -162,6 +187,8 @@ class OTPCard(QFrame):
         self.setProperty("offline", False)
         self.account_label.setText(self.account)
         self.issuer_label.setText(self.issuer)
+        self.info_button.setVisible(True)
+        self.delete_button.setVisible(True)
         if self.otp_type == 2:
             self.progress.setVisible(True)
         else:

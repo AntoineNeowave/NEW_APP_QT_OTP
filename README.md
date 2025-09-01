@@ -15,11 +15,14 @@
 - Installer les dépendances: `pip install -r requirements.txt`
 
 ### Windows:
-...
+- Créer un environnement: `python -m venv venv`
+- L'activer: `./venv/Scripts/activate`
+- Installer les dépendances: `pip install -r requirements.txt`
+
 ### MacOS:
 ...
 
-### Lancement: python ./main.py
+#### Lancement: `python ./main.py`
 
 ## Générer un executable:
 
@@ -39,6 +42,7 @@ PyInstaller va inclure automatiquement la plupart des DLLs nécessaires
 L'executable se trouve dans 'dist'
 
 ### MacOS:
+...
 
 ## Lancement de l'executable:
 

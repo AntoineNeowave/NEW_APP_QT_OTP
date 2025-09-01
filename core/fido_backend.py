@@ -152,7 +152,6 @@ class FidoOTPBackend:
             try:
                 self.logger.debug("Calling _connect()")
                 ctap = self._connect()
-                
                 self.logger.debug(f"Connect OK, ctap={type(ctap).__name__}")
                 self.logger.debug(f"Sending CBOR command: 0x{command:02X}")
                 result = ctap.send_cbor(command, payload)

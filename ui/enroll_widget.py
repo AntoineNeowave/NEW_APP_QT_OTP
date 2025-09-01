@@ -202,13 +202,16 @@ class EnrollWidget(QWidget):
         content_layout.addWidget(self.parameters_panel)
 
         # === Bouton Enroller ===
-        enroll_btn = QPushButton("Add account")
-        enroll_btn.setObjectName("enrollBtn")
-        enroll_btn.clicked.connect(self._enroll)
-        content_layout.addWidget(enroll_btn)
+        self.enroll_btn = QPushButton("Add account")
+        self.enroll_btn.setObjectName("enrollBtn")
+        self.enroll_btn.clicked.connect(self._enroll)
+        content_layout.addWidget(self.enroll_btn)
 
         content_layout.addStretch()
 
+        # Validation initiale
+        self._validate_form()
+        
     def showEvent(self, event):
         super().showEvent(event)
         self.seed_edit.clear()
@@ -220,11 +223,49 @@ class EnrollWidget(QWidget):
         self.counter_spin.setValue(0)
         self.digits_spin.setValue(6)
         self.parameters_panel.hide()
-
+        self._validate_form()
+        self.show_params_btn.setChecked(False)
+        self.show_params_btn.setIcon(self.icon_down)
+        
     def _field_changed(self, text):
         widget = self.sender()  
         if text.strip():
             widget.setStyleSheet("")
+        self._validate_form()
+        
+    def _validate_form(self):
+        """Valide le formulaire et active/désactive le bouton d'enrollment"""
+        account_name = self.account_edit.text().strip()
+        seed = self.seed_edit.text().strip().replace(" ", "")
+        
+        # Vérifier les champs requis
+        is_valid = True
+        
+        # Account name requis
+        if not account_name:
+            is_valid = False
+            
+        # Seed requis et doit être du Base32 valide
+        if not seed:
+            is_valid = False
+        elif seed and not self.is_base32(seed):
+            is_valid = False
+            
+        # Activer/désactiver le bouton selon la validation
+        self.enroll_btn.setEnabled(is_valid)
+        
+        # Tooltip informatif quand désactivé
+        if not is_valid:
+            if not account_name and not seed:
+                self.enroll_btn.setToolTip("Account name and secret key are required")
+            elif not account_name:
+                self.enroll_btn.setToolTip("Account name is required")
+            elif not seed:
+                self.enroll_btn.setToolTip("Secret key is required")
+            elif not self.is_base32(seed):
+                self.enroll_btn.setToolTip("Secret key must be a valid Base32 string")
+        else:
+            self.enroll_btn.setToolTip("")
 
     def _toggle_parameters_visibility(self):
         if self.parameters_panel.isHidden():
@@ -265,7 +306,9 @@ class EnrollWidget(QWidget):
         algo = self.algo_combo.currentText()
         rand = os.urandom(length.get(algo, 20))
         self.seed_edit.setText(base64.b32encode(rand).decode("utf-8"))
+        self._validate_form()
 
+    @staticmethod    
     def is_base32(s: str) -> bool:
         try:
             # Essaye de décoder la chaîne (en bytes)
