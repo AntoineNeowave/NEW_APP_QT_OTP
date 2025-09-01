@@ -7,6 +7,7 @@ from fido2.ctap import CtapError
 import time
 from base64 import b32decode
 from fido2.pcsc import CtapPcscDevice
+from core.logger import app_logger
 
 OTP_CREATE = 0xB1
 OTP_GENERATE = 0xB2
@@ -34,7 +35,8 @@ class FidoOTPBackend:
         self.device = None
         self.last_error = None
         self.connection_valid = False
-
+        self.logger = app_logger.getChild('Backend')
+        self.logger.info("FidoOTPBackend initialized")
     @staticmethod
     def get_error_message(code: int) -> str:
         return OTP_ERROR_CODES.get(code, (f"Unknown error 0x{code:02X}", "Undocumented error"))[1]
@@ -45,10 +47,10 @@ class FidoOTPBackend:
             ctap.send_cbor(OTP_ENUMERATE, {1: 0})
             return True
         except CtapError:
-            print(f"[DEBUG] CTAP Error during test_otp_support")
+            self.logger.debug(f"[DEBUG] CTAP Error during test_otp_support")
             return False
         except Exception:
-            print(f"[DEBUG] Exception Error during test_otp_support")
+            self.logger.debug(f"[DEBUG] CTAP Error during test_otp_support")
             return False
 
     def _connect(self):
@@ -58,119 +60,119 @@ class FidoOTPBackend:
             try:
                 return self.ctap
             except Exception as e:
-                print(f"[DEBUG] connexion existante échoué: {e}")
+                self.logger.debug("Existing connection invalid")
                 self._cleanup_connection()
 
-        print("Recherche d'un device FIDO2 avec support OTP...")
+        self.logger.info("Searching for FIDO2 device with OTP support...")
         self._cleanup_connection()
 
         # 1) Test des devices HID
         try:
             hid_devs = list(CtapHidDevice.list_devices())
-            print(f"[DEBUG] {len(hid_devs)} devices HID trouvés")
+            self.logger.debug(f"{len(hid_devs)} HID devices found")
         except Exception as e:
-            print(f"[DEBUG] Erreur énumération HID: {e}")
+            self.logger.debug(f"[DEBUG] Erreur énumération HID: {e}")
             hid_devs = []
 
         for i, dev in enumerate(hid_devs):
             try:
-                print(f"[DEBUG] Test device HID {i}: {dev}")
+                self.logger.debug(f"[DEBUG] Test device HID {i}: {dev}")
                 ctap = Ctap2(dev)
-                print(f"[DEBUG] CTAP2 créé pour device HID {i}")
+                self.logger.debug(f"[DEBUG] CTAP2 créé pour device HID {i}")
                 if self._test_otp_support(ctap):
                     self.ctap = ctap
                     self.device = dev
                     self.connection_valid = True
                     self.last_error = None
-                    print(f"Device OTP trouvé : {dev}")
+                    self.logger.debug(f"Device OTP trouvé : {dev}")
                     return self.ctap
                 else:
-                    print(f"[DEBUG] Device HID {i} ne supporte pas OTP")
+                    self.logger.debug(f"[DEBUG] Device HID {i} ne supporte pas OTP")
                     self._cleanup_connection()
             except Exception as e:
-                print(f"[DEBUG] Erreur avec device HID {i}: {e}")
+                self.logger.debug(f"[DEBUG] Erreur avec device HID {i}: {e}")
                 try: 
                     self._cleanup_connection()
                 except Exception as close_e: 
-                    print(f"[DEBUG] Erreur fermeture device HID {i}: {close_e}")
+                    self.logger.debug(f"[DEBUG] Erreur fermeture device HID {i}: {close_e}")
 
         # 2) Test des devices PC/SC
         try:
             pcsc_devs = list(CtapPcscDevice.list_devices())
-            print(f"[DEBUG] {len(pcsc_devs)} devices PCSC trouvés")
+            self.logger.debug(f"[DEBUG] {len(pcsc_devs)} devices PCSC trouvés")
         except Exception as e:
-            print(f"[DEBUG] Erreur énumération PCSC: {e}")
+            self.logger.debug(f"[DEBUG] Erreur énumération PCSC: {e}")
             pcsc_devs = []
 
         for i, dev in enumerate(pcsc_devs):
             try:
-                print(f"[DEBUG] Test device PCSC {i}: {dev}")
+                self.logger.debug(f"[DEBUG] Test device PCSC {i}: {dev}")
                 ctap = Ctap2(dev)
-                print(f"[DEBUG] CTAP2 créé pour device PCSC {i}")
+                self.logger.debug(f"[DEBUG] CTAP2 créé pour device PCSC {i}")
                 if self._test_otp_support(ctap):
                     self.ctap = ctap
                     self.device = dev
                     self.connection_valid = True
                     self.last_error = None
-                    print(f"Device OTP trouvé : {dev}")
+                    self.logger.debug(f"Device OTP trouvé : {dev}")
                     return self.ctap
                 else:
-                    print(f"[DEBUG] Device PCSC {i} ne supporte pas OTP")
+                    self.logger.debug(f"[DEBUG] Device PCSC {i} ne supporte pas OTP")
                     self._cleanup_connection()
             except Exception as e:
-                print(f"[DEBUG] Erreur avec device PCSC {i}: {e}")
+                self.logger.debug(f"[DEBUG] Erreur avec device PCSC {i}: {e}")
                 try: 
                     self._cleanup_connection()
                 except Exception as close_e: 
-                    print(f"[DEBUG] Erreur fermeture device PCSC {i}: {close_e}")
+                    self.logger.debug(f"[DEBUG] Erreur fermeture device PCSC {i}: {close_e}")
 
         # Aucun device compatible trouvé
-        print("[DEBUG] Aucun device OTP trouvé")
+        self.logger.debug("[DEBUG] Aucun device OTP trouvé")
         self._cleanup_connection()
         raise RuntimeError("⚠️ No OTP Device detected.")
 
     def _cleanup_connection(self):
         """Nettoie la connexion actuelle"""
-        print("[DEBUG] _cleanup_connection appelé")
+        self.logger.debug("[DEBUG] _cleanup_connection appelé")
         self.connection_valid = False
         if self.device:
             try:
-                print(f"[DEBUG] Fermeture device: {self.device}")
+                self.logger.debug(f"[DEBUG] Fermeture device: {self.device}")
                 self.device.close()
-                print("[DEBUG] Device fermé avec succès")
+                self.logger.debug("[DEBUG] Device fermé avec succès")
             except Exception as e:
-                print(f"[DEBUG] Erreur fermeture device: {e}")
+                self.logger.debug(f"[DEBUG] Erreur fermeture device: {e}")
         self.ctap = None
         self.device = None
 
     def _execute_command(self, command, payload, operation_name="operation"):
         """Exécute une commande CTAP avec gestion d'erreur uniforme"""
         with self.lock:
-            print(f"[DEBUG] _execute_command: {operation_name}")
+            self.logger.debug(f"Executing command: {operation_name}")
             try:
-                print("[DEBUG] Appel _connect()")
+                self.logger.debug("Calling _connect()")
                 ctap = self._connect()
-                print(f"[DEBUG] _connect() OK, ctap={ctap}")
-                print(f"[DEBUG] Envoi commande CBOR: cmd=0x{command:02X}")
+                
+                self.logger.debug(f"Connect OK, ctap={type(ctap).__name__}")
+                self.logger.debug(f"Sending CBOR command: 0x{command:02X}")
                 result = ctap.send_cbor(command, payload)
-                print(f"[DEBUG] Commande CBOR OK, result keys: {result.keys() if result else 'None'}")
+                self.logger.debug(f"CBOR command OK, result keys: {list(result.keys()) if result else 'None'}")
                 return True, result
             except CtapError as e:
                 error_msg = self.get_error_message(e.code)
-                print(f"[DEBUG] CTAP Error during {operation_name}: {e.code:02X} → {error_msg}")
+                self.logger.warning(f"CTAP Error in {operation_name}: 0x{e.code:02X} -> {error_msg}")
                 self.last_error = error_msg
                 # Ne pas invalider la connexion pour les erreurs CTAP logiques
                 return False, None
             except (OSError, IOError, ConnectionError) as e:
                 # Erreur de communication/USB
-                print(f"Communication error during {operation_name}: {e}")
+                self.logger.error(f"Communication error in {operation_name}: {e}")
                 self._cleanup_connection()
                 self.last_error = "Device communication error"
                 return False, None
             except (Exception, RuntimeError) as e:
                 # Erreur de connexion/communication → invalider la connexion
-                print(f"[DEBUG] Exception/RuntimeError during {operation_name}: {type(e).__name__}: {e}")
-                print("[DEBUG] Invalidation de la connexion")
+                self.logger.warning(f"Command {operation_name} Exception / RuntimeError")
                 self._cleanup_connection()
                 self.last_error = str(e)
                 return False, None
@@ -228,7 +230,7 @@ class FidoOTPBackend:
             return all_generators
             
         except Exception as e:
-            print(f"Error in get_all_generators: {e}")
+            self.logger.debug(f"Error in get_all_generators: {e}")
             self.last_error = str(e)
             return None
 
@@ -259,7 +261,7 @@ class FidoOTPBackend:
         try:
             secret = b32decode(secret_b32, casefold=True)
         except Exception as e:
-            print(f"Base32 decoding error : {e}")
+            self.logger.debug(f"Base32 decoding error : {e}")
             self.last_error = str(e)
             return False
 

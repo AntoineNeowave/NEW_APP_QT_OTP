@@ -1,15 +1,14 @@
-from PyQt6.QtWidgets import QApplication, QMessageBox
-from PyQt6.QtCore import QSharedMemory, QSystemSemaphore
+from PyQt6.QtWidgets import QApplication
 import sys, re, os
 from ui.main_window import MainWindow
 from ui.ressources import resource_path
-
+from core.logger import setup_logger, app_logger
+import logging
 import os
 import sys
 import tempfile
-import time
 import atexit
-from PyQt6.QtWidgets import QApplication, QMessageBox
+from PyQt6.QtWidgets import QApplication
 
 class FileLockSingleton:
     def __init__(self, app_name="NeoOTP"):
@@ -181,19 +180,41 @@ def load_qss_with_images(qss_rel_path=("ui","style.qss")) -> str:
 
 def main():    
 
-    singleton = FileLockSingleton("NeoOTP")
-
-    app = QApplication(sys.argv)    
-    app.setStyleSheet(load_qss_with_images())    
-    window = MainWindow()    
-    window.show()    
-
-    try:
-        result = app.exec()
-    finally:
-        singleton.cleanup()
+    logger = setup_logger("NeoOTP", logging.DEBUG)
     
-    return result
+    try:
+        logger.info("Starting NeoOTP application")
+        
+        # Capturer les exceptions non gérées
+        def handle_exception(exc_type, exc_value, exc_traceback):
+            if issubclass(exc_type, KeyboardInterrupt):
+                sys.__excepthook__(exc_type, exc_value, exc_traceback)
+                return
+            logger.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+
+        sys.excepthook = handle_exception
+
+        singleton = FileLockSingleton("NeoOTP")
+
+        app = QApplication(sys.argv)    
+        app.setStyleSheet(load_qss_with_images())    
+        window = MainWindow()    
+        window.show()    
+
+        try:
+            result = app.exec()
+        finally:
+            singleton.cleanup()
+
+        logger.info(f"Application exited with code: {result}")
+        return result
+    
+    except Exception as e:
+        logger.critical(f"Fatal error: {e}", exc_info=True)
+        return 1
+    finally:
+        logger.info("Application shutdown complete")
+    
 
 if __name__ == "__main__":
     sys.exit(main())  # sys.exit() seulement ici
