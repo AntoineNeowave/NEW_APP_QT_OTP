@@ -18,12 +18,16 @@ import time
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Winkeo/Badgeo OTP Manager - V0.0.6-logs")
+        self.setWindowTitle("Winkeo/Badgeo OTP Manager - V0.0.7")
         logo_path = resource_path("images", "logo.png")
         self.setWindowIcon(QIcon(str(logo_path)))
-        self.setFixedSize(400, 650)
-        flags = self.windowFlags()
-        self.setWindowFlags(flags | Qt.WindowType.MSWindowsFixedSizeDialogHint)
+        #self.setFixedSize(400, 650)
+        self.setMinimumHeight(650)
+        self.setMaximumHeight(1000)
+        self.setMinimumWidth(400)
+        self.setMaximumWidth(600)
+        # flags = self.windowFlags()
+        # self.setWindowFlags(flags | Qt.WindowType.MSWindowsFixedSizeDialogHint)
 
         self.backend = FidoOTPBackend()
         self.generator_widgets = {}

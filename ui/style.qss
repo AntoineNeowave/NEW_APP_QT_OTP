@@ -221,3 +221,7 @@ IconButton:pressed {
 IconButton:focus {
     outline: none;
 }
+
+#RefreshBtn{
+    padding-bottom: 5px;
+}

@@ -11,6 +11,11 @@ from ui.header import Header
 from PyQt6.QtGui import QValidator, QIcon
 from ui.ressources import resource_path
 
+SEED_LENGTH_LIMITS = {
+    "SHA1": {"min_recommended": 20, "min_accepted": 1, "max": 64},
+    "SHA256": {"min_recommended": 32, "min_accepted": 1, "max": 64}, 
+    "SHA512": {"min_recommended": 64, "min_accepted": 1, "max": 128}
+}
 class EnrollWidget(QWidget):
     seed_enrolled = pyqtSignal()
     cancel_requested = pyqtSignal()
@@ -166,6 +171,8 @@ class EnrollWidget(QWidget):
         algo_layout.addWidget(self.algo_combo)
         params_layout.addWidget(algo_section)
 
+        self.algo_combo.currentTextChanged.connect(self._validate_form)
+        
         # === Longueur du code ===
         digits_section = QWidget()
         digits_layout = QVBoxLayout(digits_section)
@@ -237,35 +244,39 @@ class EnrollWidget(QWidget):
         """Valide le formulaire et active/désactive le bouton d'enrollment"""
         account_name = self.account_edit.text().strip()
         seed = self.seed_edit.text().strip().replace(" ", "")
+        algo = self.algo_combo.currentText()
         
         # Vérifier les champs requis
         is_valid = True
+        tooltip_msg = ""
         
         # Account name requis
         if not account_name:
             is_valid = False
+            tooltip_msg = "Account name is required"
             
         # Seed requis et doit être du Base32 valide
-        if not seed:
+        elif not seed:
             is_valid = False
-        elif seed and not self.is_base32(seed):
+            tooltip_msg = "Secret key is required"
+        elif not self.is_base32(seed):
             is_valid = False
-            
+            tooltip_msg = "Secret key must be a valid Base32 string"
+        else:
+            # Validation supplémentaire de la longueur de la graine
+            try:
+                secret_bytes = base64.b32decode(seed.upper(), casefold=True)
+                length_valid, length_error = EnrollWidget.validate_seed_length(secret_bytes, algo)
+                if not length_valid:
+                    is_valid = False
+                    tooltip_msg = f"Invalid seed length: {length_error}"
+            except Exception as e:
+                is_valid = False
+                tooltip_msg = f"Invalid Base32 encoding: {str(e)}"
+                
         # Activer/désactiver le bouton selon la validation
         self.enroll_btn.setEnabled(is_valid)
-        
-        # Tooltip informatif quand désactivé
-        if not is_valid:
-            if not account_name and not seed:
-                self.enroll_btn.setToolTip("Account name and secret key are required")
-            elif not account_name:
-                self.enroll_btn.setToolTip("Account name is required")
-            elif not seed:
-                self.enroll_btn.setToolTip("Secret key is required")
-            elif not self.is_base32(seed):
-                self.enroll_btn.setToolTip("Secret key must be a valid Base32 string")
-        else:
-            self.enroll_btn.setToolTip("")
+        self.enroll_btn.setToolTip(tooltip_msg if not is_valid else "")
 
     def _toggle_parameters_visibility(self):
         if self.parameters_panel.isHidden():
@@ -308,7 +319,7 @@ class EnrollWidget(QWidget):
         self.seed_edit.setText(base64.b32encode(rand).decode("utf-8"))
         self._validate_form()
 
-    @staticmethod    
+    @staticmethod
     def is_base32(s: str) -> bool:
         try:
             # Essaye de décoder la chaîne (en bytes)
@@ -317,7 +328,38 @@ class EnrollWidget(QWidget):
         except Exception:
             # Si une erreur est levée, ce n'est pas du Base32 valide
             return False
-    
+        
+    @staticmethod
+    def validate_seed_length(secret_bytes: bytes, algo: str) -> tuple[bool, str]:
+        """
+        Valide la longueur de la graine selon l'algorithme
+        
+        Args:
+            secret_bytes: La graine décodée en bytes
+            algo: L'algorithme (SHA1, SHA256, SHA512)
+            
+        Returns:
+            tuple: (is_valid, error_message)
+        """
+        if algo not in SEED_LENGTH_LIMITS:
+            return False, f"Unknown algorithm: {algo}"
+        
+        limits = SEED_LENGTH_LIMITS[algo]
+        length = len(secret_bytes)
+        
+        # Vérifier la longueur minimale acceptée
+        if length < limits["min_accepted"]:
+            return False, f"Secret key too short for {algo}: {length} bytes (minimum: {limits['min_accepted']})"
+        
+        # Vérifier la longueur maximale
+        if length > limits["max"]:
+            return False, f"Secret key too long for {algo}: {length} bytes (maximum: {limits['max']})"
+        
+        if length < limits["min_recommended"]:
+            print(f"Warning: Secret key length ({length} bytes) is below recommended for {algo}")
+        
+        return True, ""
+
     def _enroll(self):
         account_name = self.account_edit.text().strip()
         issuer_name = self.issuer_edit.text().strip()
@@ -336,8 +378,21 @@ class EnrollWidget(QWidget):
             QMessageBox.warning(self, "Error", "Secret key is required.")
             self.seed_edit.setStyleSheet("background-color: #ffe4e1;")
             return
-        if seed and not EnrollWidget.is_base32(seed):
+        if seed and not self.is_base32(seed):
             QMessageBox.warning(self, "Error", "Secret key must be a valid Base32 string.")
+            self.seed_edit.setStyleSheet("background-color: #ffe4e1;")
+            return
+        
+        # Validation de la longueur de la graine
+        try:
+            secret_bytes = base64.b32decode(seed.upper(), casefold=True)
+            is_valid, error_msg = self.validate_seed_length(secret_bytes, algo)
+            if not is_valid:
+                QMessageBox.warning(self, "Error", f"Secret key validation failed:\n{error_msg}")
+                self.seed_edit.setStyleSheet("background-color: #ffe4e1;")
+                return
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"Invalid Base32 encoding: {str(e)}")
             self.seed_edit.setStyleSheet("background-color: #ffe4e1;")
             return
 

@@ -84,41 +84,50 @@ class OTPCard(QFrame):
 
         # === Partie droite compacte ===
         right_layout = QVBoxLayout()
-        right_layout.setContentsMargins(0, 30, 0, 0)
-        right_layout.setSpacing(15)  # espace modéré entre les éléments
+        right_layout.setContentsMargins(0, 25, 0, 0)  # marge haute ajustée
+        right_layout.setSpacing(5)  # espace entre bloc principal et boutons
 
-        # On ajoute un spacing en haut pour pousser légèrement vers le bas
+        # Bloc "haut" uniforme (progress ou bouton HOTP)
+        top_container = QWidget()
+        top_layout = QVBoxLayout(top_container)
+        top_layout.setContentsMargins(0, 0, 0, 0)
+        top_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         if otp_type == 1:  # HOTP
             refresh_icon_path = resource_path("images/refresh.png")
             refresh_icon_clicked_path = resource_path("images/refresh_clicked.png")
             self.btn = IconButton(refresh_icon_path, refresh_icon_clicked_path, QSize(35, 35))
             self.btn.setFlat(True)
+            self.btn.setObjectName("RefreshBtn")
             self.btn.clicked.connect(lambda: self.request_code.emit(self.label_text))
-            right_layout.addWidget(self.btn, alignment=Qt.AlignmentFlag.AlignRight)
+            top_layout.addWidget(self.btn)
         else:  # TOTP
             self.progress = ProgressIndicator(period)
-            right_layout.addWidget(self.progress, alignment=Qt.AlignmentFlag.AlignRight)
+            top_layout.addWidget(self.progress)
+
+        # Forcer une hauteur identique du bloc (pour uniformiser TOTP/HOTP)
+        top_container.setFixedHeight(35)
+
+        right_layout.addWidget(top_container, alignment=Qt.AlignmentFlag.AlignRight)
 
         # Boutons info + delete en bas à droite
         info_button_path = resource_path("images/info.png")
         info_button_clicked_path = resource_path("images/info_clicked.png")
-        self.info_button = IconButton(info_button_path, info_button_clicked_path, QSize(16, 16))
-        self.info_button.setFixedSize(16, 16)
+        self.info_button = IconButton(info_button_path, info_button_clicked_path, QSize(15, 15))
+        self.info_button.setFixedSize(15, 15)
         self.info_button.setFlat(True)
         self.info_button.setToolTip("Show OTP parameters")
         self.info_button.clicked.connect(lambda: self.parameters_requested.emit(self.label_text, self.otp_type))
 
         delete_button_path = resource_path("images/trash.png")
         delete_button_clicked_path = resource_path("images/trash_clicked.png")
-        self.delete_button = IconButton(delete_button_path, delete_button_clicked_path, QSize(16, 16))
-        self.delete_button.setFixedSize(16, 16)
+        self.delete_button = IconButton(delete_button_path, delete_button_clicked_path, QSize(15, 15))
+        self.delete_button.setFixedSize(15, 15)
         self.delete_button.setFlat(True)
         self.delete_button.setToolTip("Delete OTP account")
         self.delete_button.clicked.connect(lambda: self.delete_requested.emit(self.label_text))
 
-
-        # Boutons info + delete juste en dessous
+        # Ligne du bas pour info/delete
         bottom_buttons = QHBoxLayout()
         bottom_buttons.setSpacing(6)
         bottom_buttons.addStretch()
@@ -126,10 +135,11 @@ class OTPCard(QFrame):
         bottom_buttons.addWidget(self.delete_button)
 
         right_layout.addLayout(bottom_buttons)
-    
-        # Aligner toute la colonne verticalement au centre de la carte
+
+        # Aligner la colonne de droite au centre vertical
         main_layout.addLayout(right_layout)
         main_layout.setAlignment(right_layout, Qt.AlignmentFlag.AlignVCenter)
+
 
         self.set_code(self.code)
 
@@ -167,6 +177,10 @@ class OTPCard(QFrame):
             self.remaining_seconds = self.progress.remaining_seconds
 
     def contextMenuEvent(self, event):
+        if self.property("offline"):
+            # Pas de menu contextuel quand offline
+            return
+        
         menu = QMenu(self)
         show_params_action = QAction("Show OTP parameters", self)
         show_params_action.triggered.connect(lambda: self.parameters_requested.emit(self.label_text, self.otp_type))

@@ -1,4 +1,4 @@
-# ui/header.py - Version avancée avec contrôle précis
+# ui/header.py - Version corrigée pour équilibrer les tailles
 
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel
 from PyQt6.QtGui import QPixmap
@@ -7,10 +7,10 @@ from ui.ressources import resource_path
 from PyQt6.QtSvgWidgets import QSvgWidget
 
 class ScalableSvgWidget(QSvgWidget):
-    """SVG Widget qui maintient les proportions"""
-    def __init__(self, svg_path, max_height=45, parent=None):
+    """SVG Widget qui maintient les proportions avec taille spécifique"""
+    def __init__(self, svg_path, target_height, parent=None):
         super().__init__(str(svg_path), parent)
-        self.max_height = max_height
+        self.target_height = target_height
         self._setup_scaling()
     
     def _setup_scaling(self):
@@ -20,11 +20,11 @@ class ScalableSvgWidget(QSvgWidget):
             natural_size = renderer.defaultSize()
             aspect_ratio = natural_size.width() / natural_size.height()
             
-            # Calculer la largeur basée sur la hauteur max
-            scaled_width = int(self.max_height * aspect_ratio)
+            # Calculer la largeur basée sur la hauteur cible
+            scaled_width = int(self.target_height * aspect_ratio)
             
             # Appliquer la taille
-            self.setFixedSize(scaled_width, self.max_height)
+            self.setFixedSize(scaled_width, self.target_height)
 
 class Header(QWidget):
     def __init__(self, parent=None):
@@ -38,24 +38,27 @@ class Header(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        # SVG avec scaling automatique et proportions préservées
-        max_logo_height = 40
+        # Hauteurs spécifiques par logo pour équilibrer visuellement
+        # Ajustez ces valeurs selon vos besoins
+        neowave_height = 40
+        otp_height = 20      # Plus petit car probablement trop gros
+        manager_height = 10
         
-        # Logos avec scaling intelligent
+        # Logos avec tailles ajustées individuellement
         logo_neowave_path = resource_path("images", "neowave.svg")
-        logo_neowave = ScalableSvgWidget(logo_neowave_path, max_logo_height)
+        logo_neowave = ScalableSvgWidget(logo_neowave_path, neowave_height)
         
-        logo_otp_path = resource_path("images", "otp.svg")
-        logo_otp = ScalableSvgWidget(logo_otp_path, max_logo_height)
+        logo_otp_path = resource_path("images", "otp_regular.svg")
+        logo_otp = ScalableSvgWidget(logo_otp_path, otp_height)  # Plus petit
         
-        logo_manager_path = resource_path("images", "manager.svg")
-        logo_manager = ScalableSvgWidget(logo_manager_path, max_logo_height)
+        logo_manager_path = resource_path("images", "manager_man_noir.svg")
+        logo_manager = ScalableSvgWidget(logo_manager_path, manager_height)
 
         # Container pour les logos avec espacement contrôlé
         logos_widget = QWidget()
         logos_layout = QHBoxLayout(logos_widget)
         logos_layout.setContentsMargins(0, 0, 0, 0)
-        logos_layout.setSpacing(0)  # Espacement entre logos
+        logos_layout.setSpacing(5)  # Petit espacement entre logos
         
         # Ajouter avec alignement parfait
         logos_layout.addWidget(logo_neowave, alignment=Qt.AlignmentFlag.AlignCenter)
