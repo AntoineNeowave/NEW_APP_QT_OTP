@@ -29,16 +29,15 @@ class OTPCard(QFrame):
         self.code = code
 
         self.setObjectName("otpCard")
-
+        
         # === Layout principal ===
         main_layout = QHBoxLayout(self)
-        main_layout.setContentsMargins(5, 5, 15, 5)
-
+        main_layout.setContentsMargins(4, 4, 15, 4)
         # === Partie gauche ===
         left_widget = QWidget()
         left_widget.setFixedWidth(230)
         left_layout = QVBoxLayout(left_widget)
-
+        left_layout.setSpacing(3)
         # Code + copier
         self.label_code = QLabel()
         self.label_code.setObjectName("codeLabel")
@@ -84,7 +83,7 @@ class OTPCard(QFrame):
 
         # === Partie droite compacte ===
         right_layout = QVBoxLayout()
-        right_layout.setContentsMargins(0, 25, 0, 0)  # marge haute ajustée
+        right_layout.setContentsMargins(0, 0, 0, 0)  # marge haute ajustée
         right_layout.setSpacing(5)  # espace entre bloc principal et boutons
 
         # Bloc "haut" uniforme (progress ou bouton HOTP)
@@ -106,7 +105,7 @@ class OTPCard(QFrame):
             top_layout.addWidget(self.progress)
 
         # Forcer une hauteur identique du bloc (pour uniformiser TOTP/HOTP)
-        top_container.setFixedHeight(35)
+        top_container.setFixedHeight(38)
 
         right_layout.addWidget(top_container, alignment=Qt.AlignmentFlag.AlignRight)
 

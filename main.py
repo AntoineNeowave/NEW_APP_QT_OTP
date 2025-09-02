@@ -1,4 +1,5 @@
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QMessageBox
+from PyQt6.QtCore import QSharedMemory, QSystemSemaphore
 import sys, re, os
 from ui.main_window import MainWindow
 from ui.ressources import resource_path
@@ -8,13 +9,14 @@ import sys
 import tempfile
 import time
 import atexit
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QMessageBox
 
 class FileLockSingleton:
     def __init__(self, app_name="NeoOTP"):
         self.app_name = app_name
         self.lock_file = os.path.join(tempfile.gettempdir(), f"{app_name}.lock")
         self.pid = os.getpid()
+        self.lock_handle = None  # Ajout pour garder le handle
         
         print(f"Début singleton fichier: {self.lock_file}")
         
@@ -36,10 +38,13 @@ class FileLockSingleton:
         if not os.path.exists(self.lock_file):
             return False
         
+        # D'abord tester si le fichier est verrouillé (instance active)
         try:
-            with open(self.lock_file, 'r') as f:
+            # Essayer d'ouvrir en mode écriture exclusive
+            with open(self.lock_file, 'r+') as f:
                 content = f.read().strip()
                 if not content:
+                    print("Fichier lock vide - suppression")
                     return False
                 
                 pid = int(content)
@@ -48,20 +53,20 @@ class FileLockSingleton:
                 # Vérifier si le processus existe
                 if self._process_exists(pid):
                     print("Processus existe encore")
-                    # Essayer de ramener au premier plan via signal ou autre
                     self._try_bring_to_front(pid)
                     return True
                 else:
-                    print("Processus mort - suppression lock")
-                    os.remove(self.lock_file)
+                    print("Processus mort - fichier non verrouillé")
                     return False
                     
+        except (IOError, OSError, PermissionError):
+            # Le fichier est verrouillé = instance active
+            print("Instance active détectée (fichier verrouillé)")
+            self._try_bring_to_front(None)  # PID inconnu
+            return True
+            
         except Exception as e:
-            print(f"Erreur lecture lock: {e}")
-            try:
-                os.remove(self.lock_file)
-            except:
-                pass
+            print(f"Erreur test lock: {e}")
             return False
     
     def _process_exists(self, pid):
@@ -143,22 +148,84 @@ class FileLockSingleton:
     def _create_lock(self):
         """Crée le fichier de verrouillage"""
         try:
-            with open(self.lock_file, 'w') as f:
-                f.write(str(self.pid))
+            # Si un ancien fichier existe et n'est pas verrouillé, on peut le supprimer
+            if os.path.exists(self.lock_file):
+                try:
+                    # Test rapide - si on peut l'ouvrir en écriture, il n'est pas verrouillé
+                    with open(self.lock_file, 'r+') as f:
+                        pass
+                    # Arrivé ici = pas verrouillé, on peut le supprimer
+                    os.remove(self.lock_file)
+                    print("Ancien lock file non verrouillé supprimé")
+                except (IOError, OSError, PermissionError):
+                    # Verrouillé = il ne devrait pas y avoir d'autre instance
+                    # mais au cas où, on continue quand même
+                    print("Fichier existant verrouillé détecté")
+            
+            # Créer et garder ouvert le nouveau fichier
+            self.lock_handle = open(self.lock_file, 'w')
+            self.lock_handle.write(str(self.pid))
+            self.lock_handle.flush()
+            # Ne pas fermer le fichier - on le garde ouvert pour le verrouiller
+            
         except Exception as e:
             print(f"Erreur création lock: {e}")
             sys.exit(1)
     
     def cleanup(self):
         """Nettoie le fichier de verrouillage"""
+        # Éviter les appels multiples
+        if not hasattr(self, 'cleanup_done'):
+            self.cleanup_done = False
+            
+        if self.cleanup_done:
+            return
+            
+        self.cleanup_done = True
+        
         try:
+            # Étape 1: Fermer le handle
+            if self.lock_handle:
+                try:
+                    self.lock_handle.close()
+                    print("Handle fermé")
+                except Exception as e:
+                    print(f"Erreur fermeture handle: {e}")
+                finally:
+                    self.lock_handle = None
+            
+            # Étape 2: Attendre un peu que Windows libère le fichier
             if os.path.exists(self.lock_file):
-                with open(self.lock_file, 'r') as f:
-                    if f.read().strip() == str(self.pid):
+                import time
+                
+                # Vérifier d'abord que c'est notre fichier
+                try:
+                    with open(self.lock_file, 'r') as f:
+                        content = f.read().strip()
+                        if content != str(self.pid):
+                            print(f"Lock file appartient à un autre processus ({content} vs {self.pid})")
+                            return
+                except Exception as e:
+                    print(f"Impossible de lire le lock file: {e}")
+                    return
+                
+                # Essayer de supprimer avec retry (Windows peut avoir besoin de temps)
+                max_attempts = 5
+                for attempt in range(max_attempts):
+                    try:
                         os.remove(self.lock_file)
                         print("Lock file supprimé")
-        except:
-            pass
+                        return
+                    except (OSError, PermissionError) as e:
+                        if attempt < max_attempts - 1:
+                            print(f"Tentative {attempt + 1} échouée, retry dans 50ms...")
+                            time.sleep(0.05)  # 50ms
+                        else:
+                            print(f"Impossible de supprimer après {max_attempts} tentatives: {e}")
+                            print("Le fichier sera nettoyé au prochain démarrage")
+                            
+        except Exception as e:
+            print(f"Erreur cleanup générale: {e}")
 
 def load_qss_with_images(qss_rel_path=("ui","style.qss")) -> str:
     qss_path = resource_path(*qss_rel_path)
@@ -187,12 +254,8 @@ def main():
     window = MainWindow()    
     window.show()    
 
-    try:
-        result = app.exec()
-    finally:
-        singleton.cleanup()
-    
-    return result
+    # Plus besoin du try/finally car atexit s'en occupe
+    return app.exec()
 
 if __name__ == "__main__":
     sys.exit(main())  # sys.exit() seulement ici

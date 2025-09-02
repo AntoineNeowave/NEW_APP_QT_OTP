@@ -189,7 +189,6 @@ QLabel#enrollTitle{
 #enrollBtn:disabled {
     background-color: #8db5c7;  /* Bleu original désaturé */
     color: #ffffff;             /* Texte blanc */
-    cursor: not-allowed;
 }
 
 QToolButton#advancedOptionsBtn {
