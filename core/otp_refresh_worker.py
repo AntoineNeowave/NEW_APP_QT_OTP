@@ -42,7 +42,7 @@ class OTPRefreshWorker(QObject):
                         code = self.backend.generate_code(generator.label, generator.otp_type, generator.period)
                         generator.code = code if code else _("Error")
                     elif generator.otp_type == 1:  # HOTP
-                        generator.code = "●●●●●●"  # Code par défaut pour HOTP
+                        generator.code = "• • • • • •"  # Code par défaut pour HOTP
                         
                     result.append(generator)
                 except Exception as e:

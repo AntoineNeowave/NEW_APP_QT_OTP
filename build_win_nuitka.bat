@@ -12,6 +12,7 @@ python -m nuitka ^
   --enable-plugin=pyqt6 ^
   --include-data-dir=ui=ui ^
   --include-data-dir=images=images ^
+  --include-data-dir=locales=locales ^
   --windows-icon-from-ico=images/logo.ico ^
   --output-dir=dist ^
   --output-filename=NeoOTP.exe ^

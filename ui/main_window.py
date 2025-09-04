@@ -28,6 +28,7 @@ class MainWindow(QWidget):
         self.setMaximumWidth(600)
         # flags = self.windowFlags()
         # self.setWindowFlags(flags | Qt.WindowType.MSWindowsFixedSizeDialogHint)
+        #self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowMaximizeButtonHint)
 
         self.backend = FidoOTPBackend()
         self.generator_widgets = {}
@@ -203,7 +204,7 @@ class MainWindow(QWidget):
             self.operation_timer.start(100)  # Vérifier toutes les 100ms
         else:
             self._complete_enroll_operation()
-
+    
     def _complete_enroll_operation(self):
         """Finalise l'opération d'enrôlement"""
         if self.pending_refresh:

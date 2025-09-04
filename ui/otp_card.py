@@ -162,7 +162,7 @@ class OTPCard(QFrame):
         QTimer.singleShot(1000, lambda: self.feedback_label.setVisible(False))
 
     def set_code(self, code: str):
-        if "●" in code:
+        if "•" in code:
             self.label_code.setText(code)
             self.copy_button.setVisible(False)
         else:
@@ -202,7 +202,7 @@ class OTPCard(QFrame):
         msg.exec()
 
     def set_offline(self, reason: str = _("Disconnected")):
-        self.label_code.setText("●●●●●●")
+        self.label_code.setText("• • • • • •")
         self.copy_button.setVisible(False)
         self.info_button.setVisible(False)
         self.delete_button.setVisible(False)
