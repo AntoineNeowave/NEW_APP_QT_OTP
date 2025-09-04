@@ -1,15 +1,13 @@
 from PyQt6.QtWidgets import QApplication, QMessageBox
 from PyQt6.QtCore import QSharedMemory, QSystemSemaphore
 import sys, re, os
+import tempfile
+import atexit
+from core.i18n_manager import setup_i18n
+setup_i18n()
 from ui.main_window import MainWindow
 from ui.ressources import resource_path
 
-import os
-import sys
-import tempfile
-import time
-import atexit
-from PyQt6.QtWidgets import QApplication, QMessageBox
 
 class FileLockSingleton:
     def __init__(self, app_name="NeoOTP"):
@@ -245,12 +243,21 @@ def load_qss_with_images(qss_rel_path=("ui","style.qss")) -> str:
     css = re.sub(r'url\(([^)]+)\)', repl, css)
     return css
 
+if hasattr(sys, 'frozen'):
+    # Mode exécutable
+    os.environ['QT_AUTO_SCREEN_SCALE_FACTOR'] = '1'
+    
 def main():    
 
     singleton = FileLockSingleton("NeoOTP")
 
     app = QApplication(sys.argv)    
-    app.setStyleSheet(load_qss_with_images())    
+    styles = load_qss_with_images()
+    if styles:
+        app.setStyleSheet(styles)
+        print("✅ Styles appliqués")
+    else:
+        print("⚠ Application lancée sans styles")
     window = MainWindow()    
     window.show()    
 

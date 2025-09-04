@@ -1,0 +1,310 @@
+# French translations for PACKAGE package
+# Traductions françaises du paquet PACKAGE.
+# Copyright (C) 2025 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-09-02 17:13+0200\n"
+"PO-Revision-Date: 2025-09-02 17:13+0200\n"
+"Last-Translator: <EMAIL@ADDRESS>\n"
+"Language-Team: French\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: .\core\fido_backend.py:20
+msgid "Command executed successfully"
+msgstr "Commande exécutée avec succès"
+
+#: .\core\fido_backend.py:21
+msgid "Command not recognized"
+msgstr "Commande non reconnue"
+
+#: .\core\fido_backend.py:22
+msgid "The command contains invalid CBOR encoding"
+msgstr "La commande contient un encodage CBOR invalide"
+
+#: .\core\fido_backend.py:23
+msgid "Unrecognized OTP command"
+msgstr "Commande OTP inconnue"
+
+#: .\core\fido_backend.py:24
+msgid "Invalid parameter in command"
+msgstr "Paramètre invalide dans la commande"
+
+#: .\core\fido_backend.py:25
+msgid "A generator with this name already exists"
+msgstr "Un générateur avec ce nom existe déjà"
+
+#: .\core\fido_backend.py:26
+msgid "Generator not found"
+msgstr "Générateur non trouvé"
+
+#: .\core\fido_backend.py:27
+msgid "Memory full, unable to create another generator"
+msgstr "Mémoire pleine, impossible de créer un autre générateur"
+
+#: .\core\fido_backend.py:40
+#, python-brace-format
+msgid "Unknown error 0x{code:02X}"
+msgstr "Erreur inconnue 0x{code:02X}"
+
+#: .\core\fido_backend.py:40
+msgid "Undocumented error"
+msgstr "Erreur non documentée"
+
+#: .\core\fido_backend.py:105 .\ui\main_window.py:138
+msgid "⚠️ No OTP Device detected."
+msgstr "⚠️ Aucun périphérique OTP détecté."
+
+#: .\core\fido_backend.py:130
+msgid "Device communication error"
+msgstr "Erreur de communication avec le périphérique"
+
+#: .\core\otp_model.py:29
+#, python-brace-format
+msgid "Type: {type_name}"
+msgstr "Type : {type_name}"
+
+#: .\core\otp_model.py:30
+#, python-brace-format
+msgid "Account : {account}"
+msgstr "Compte : {account}"
+
+#: .\core\otp_model.py:33
+#, python-brace-format
+msgid "Issuer: {issuer}"
+msgstr "Émetteur : {issuer}"
+
+#: .\core\otp_model.py:34
+#, python-brace-format
+msgid "Code length: {digits}"
+msgstr "Longueur du code : {digits}"
+
+#: .\core\otp_model.py:37
+#, python-brace-format
+msgid "Counter: {counter}"
+msgstr "Compteur : {counter}"
+
+#: .\core\otp_model.py:39
+#, python-brace-format
+msgid "Timestep: {period} seconds"
+msgstr "Durée : {period} secondes"
+
+#: .\core\otp_model.py:40
+#, python-brace-format
+msgid "Unknown ({alg})"
+msgstr "Inconnu ({alg})"
+
+#: .\core\otp_model.py:41
+#, python-brace-format
+msgid "Algorithm: {algo}"
+msgstr "Algorithme : {algo}"
+
+#: .\core\otp_refresh_worker.py:24 .\core\otp_refresh_worker.py:56
+msgid "Device not detected"
+msgstr "Périphérique non détecté"
+
+#: .\core\otp_refresh_worker.py:30
+msgid "CTAP error"
+msgstr "Erreur CTAP"
+
+#: .\core\otp_refresh_worker.py:43 .\ui\enroll_widget.py:382
+#: .\ui\enroll_widget.py:386 .\ui\enroll_widget.py:390
+#: .\ui\enroll_widget.py:399 .\ui\enroll_widget.py:403 .\ui\main_window.py:465
+msgid "Error"
+msgstr "Erreur"
+
+#: .\ui\enroll_widget.py:25
+msgid "Enroll OTP secret"
+msgstr "Enregistrer un secret OTP"
+
+#: .\ui\enroll_widget.py:47
+msgid "Add OTP Account"
+msgstr "Ajouter un compte OTP"
+
+#: .\ui\enroll_widget.py:70
+msgid "Issuer :"
+msgstr "Émetteur :"
+
+#: .\ui\enroll_widget.py:75
+msgid "Issuer name should not contain ':'"
+msgstr "Le nom de l'émetteur ne doit pas contenir ':'"
+
+#: .\ui\enroll_widget.py:85
+msgid "Account name <span style='color:red'>*</span> :"
+msgstr "Nom du compte <span style='color:red'>*</span> :"
+
+#: .\ui\enroll_widget.py:88
+msgid "user@example.com"
+msgstr "utilisateur@exemple.com"
+
+#: .\ui\enroll_widget.py:92
+msgid "Account name should not contain ':'"
+msgstr "Le nom du compte ne doit pas contenir ':'"
+
+#: .\ui\enroll_widget.py:101
+msgid "Secret key (Base32) <span style='color:red'>*</span> :"
+msgstr "Clé secrète (Base32) <span style='color:red'>*</span> :"
+
+#: .\ui\enroll_widget.py:112
+msgid "Generate a random seed"
+msgstr "Générer une graine aléatoire"
+
+#: .\ui\enroll_widget.py:123
+msgid "Advanced options"
+msgstr "Options avancées"
+
+#: .\ui\enroll_widget.py:153
+msgid "OTP Type :"
+msgstr "Type OTP :"
+
+#: .\ui\enroll_widget.py:166
+msgid "Algorithm :"
+msgstr "Algorithme :"
+
+#: .\ui\enroll_widget.py:181
+msgid "Number of digits :"
+msgstr "Nombre de chiffres :"
+
+#: .\ui\enroll_widget.py:195 .\ui\enroll_widget.py:307
+msgid "Timestep (seconds) :"
+msgstr "Durée (secondes) :"
+
+#: .\ui\enroll_widget.py:212
+msgid "Add account"
+msgstr "Ajouter le compte"
+
+#: .\ui\enroll_widget.py:256
+msgid "Account name is required"
+msgstr "Le nom du compte est requis"
+
+#: .\ui\enroll_widget.py:261
+msgid "Secret key is required"
+msgstr "La clé secrète est requise"
+
+#: .\ui\enroll_widget.py:264
+msgid "Secret key must be a valid Base32 string"
+msgstr "La clé secrète doit être une chaîne Base32 valide"
+
+#: .\ui\enroll_widget.py:272
+#, python-brace-format
+msgid "Invalid seed length: {length_error}"
+msgstr "Longueur de graine invalide : {length_error}"
+
+#: .\ui\enroll_widget.py:275 .\ui\enroll_widget.py:403
+#, python-brace-format
+msgid "Invalid Base32 encoding: {error}"
+msgstr "Encodage Base32 invalide : {error}"
+
+#: .\ui\enroll_widget.py:311
+msgid "Initial counter :"
+msgstr "Compteur initial :"
+
+#: .\ui\enroll_widget.py:345
+#, python-brace-format
+msgid "Unknown algorithm: {algo}"
+msgstr "Algorithme inconnu : {algo}"
+
+#: .\ui\enroll_widget.py:352
+#, python-brace-format
+msgid ""
+"Secret key too short for {algo}: {length} bytes (minimum: {min_accepted})"
+msgstr ""
+"Clé secrète trop courte pour {algo} : {length} octets (minimum : {min_accepted})"
+
+#: .\ui\enroll_widget.py:360
+#, python-brace-format
+msgid "Secret key too long for {algo}: {length} bytes (maximum: {max})"
+msgstr ""
+"Clé secrète trop longue pour {algo} : {length} octets (maximum : {max})"
+
+#: .\ui\enroll_widget.py:382
+msgid "Account name is required."
+msgstr "Le nom du compte est requis."
+
+#: .\ui\enroll_widget.py:386
+msgid "Secret key is required."
+msgstr "La clé secrète est requise."
+
+#: .\ui\enroll_widget.py:390
+msgid "Secret key must be a valid Base32 string."
+msgstr "La clé secrète doit être une chaîne Base32 valide."
+
+#: .\ui\enroll_widget.py:399
+#, python-brace-format
+msgid ""
+"Secret key validation failed:\n"
+"{error_msg}"
+msgstr ""
+"Échec de validation de la clé secrète :\n"
+"{error_msg}"
+
+#: .\ui\enroll_widget.py:421
+msgid "Unknown error"
+msgstr "Erreur inconnue"
+
+#: .\ui\enroll_widget.py:422
+msgid "OTP Error"
+msgstr "Erreur OTP"
+
+#: .\ui\main_window.py:66
+msgid "Search for a code..."
+msgstr "Rechercher un code..."
+
+#: .\ui\main_window.py:140 .\ui\main_window.py:337
+msgid "Device disconnected"
+msgstr "Périphérique déconnecté"
+
+#: .\ui\main_window.py:352
+msgid "Device unplugged"
+msgstr "Périphérique débranché"
+
+#: .\ui\main_window.py:390
+#, python-brace-format
+msgid "Delete {account}"
+msgstr "Supprimer {account}"
+
+#: .\ui\main_window.py:391
+#, python-brace-format
+msgid "Are you sure you want to delete the OTP generator '{account}'?"
+msgstr "Êtes-vous sûr de vouloir supprimer le générateur OTP '{account}' ?"
+
+#: .\ui\main_window.py:464
+#, python-brace-format
+msgid "Deletion of '{label}' failed"
+msgstr "Échec de la suppression de '{label}'"
+
+#: .\ui\otp_card.py:56
+msgid "Copy code to clipboard"
+msgstr "Copier le code dans le presse-papiers"
+
+#: .\ui\otp_card.py:60
+msgid "Code copied"
+msgstr "Code copié"
+
+#: .\ui\otp_card.py:118 .\ui\otp_card.py:184
+msgid "Show OTP parameters"
+msgstr "Afficher les paramètres"
+
+#: .\ui\otp_card.py:126
+msgid "Delete OTP account"
+msgstr "Supprimer le compte"
+
+#: .\ui\otp_card.py:187
+msgid "Delete OTP code"
+msgstr "Supprimer le code OTP"
+
+#: .\ui\otp_card.py:198
+msgid "Informations"
+msgstr "Informations"
+
+#: .\ui\otp_card.py:204
+msgid "Disconnected"
+msgstr "Déconnecté"

@@ -6,3 +6,4 @@ build/
 NeoOTP.spec
 logs/
 logs/*
+extract.py

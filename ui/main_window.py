@@ -18,7 +18,7 @@ import time
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Winkeo/Badgeo OTP Manager - V0.0.7")
+        self.setWindowTitle("NEOWAVE OTP Manager - V0.0.7")
         logo_path = resource_path("images", "logo.png")
         self.setWindowIcon(QIcon(str(logo_path)))
         #self.setFixedSize(400, 650)
@@ -63,7 +63,7 @@ class MainWindow(QWidget):
         enrol_button.setObjectName("enrolPageButton")
         search_bar = QLineEdit()
         search_bar.setObjectName("searchBar")
-        search_bar.setPlaceholderText("Search for a code...")
+        search_bar.setPlaceholderText(_("Search for a code..."))
         search_bar.setClearButtonEnabled(True)
         search_bar.textChanged.connect(self.on_search_text_changed)
         search_bar.setMinimumWidth(250)
@@ -135,9 +135,9 @@ class MainWindow(QWidget):
             self.status_label.hide()
             self.set_cards_online()
         else:
-            self.status_label.setText("⚠️ No OTP Device detected.")
+            self.status_label.setText(_("⚠️ No OTP Device detected."))
             self.status_label.show()
-            self.set_cards_offline("Device disconnected")
+            self.set_cards_offline(_("Device disconnected"))
 
     def set_cards_offline(self, reason: str):
         for card in self.generator_widgets.values():
@@ -334,7 +334,7 @@ class MainWindow(QWidget):
         """Gère les erreurs de refresh"""
         self.status_label.setText(f"{message}")
         self.status_label.show()
-        self.set_cards_offline("Device disconnected")
+        self.set_cards_offline(_("Device disconnected"))
 
     def clear_all_cards(self):
         """Vide toutes les cartes OTP"""
@@ -349,7 +349,7 @@ class MainWindow(QWidget):
         if code is None:
             code = f"{getattr(self.backend, 'last_error', 'Unknown')}"
         elif code is False:
-            code = "Device unplugged"
+            code = _("Device unplugged")
 
         if label in self.generator_widgets:
             self.generator_widgets[label].set_code(code)
@@ -372,7 +372,8 @@ class MainWindow(QWidget):
                         card.parameter_text = OTPGenerator(found_generator).display_parameters()
                 
             except Exception as e:
-                print(f"Erreur lors du rafraîchissement des paramètres HOTP pour {label}: {e}")
+                # print(f"Erreur lors du rafraîchissement des paramètres HOTP pour {label}: {e}")
+                pass
 
         card.show_parameters()
 
@@ -386,10 +387,11 @@ class MainWindow(QWidget):
             
         reply = QMessageBox.question(
             self,
-            f"Delete {account}",
-            f"Are you sure you want to delete the OTP generator '{account}'?",
+            _("Delete {account}").format(account=account),
+            _("Are you sure you want to delete the OTP generator '{account}'?").format(account=account),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
+
         
         if reply == QMessageBox.StandardButton.Yes:
             self.operation_in_progress = True
@@ -459,8 +461,8 @@ class MainWindow(QWidget):
             self.start_refresh_thread()
             QTimer.singleShot(500, self._reset_operation_flag)  # Reset après 500ms
         else:
-            error_msg = getattr(self.backend, "last_error", f"Deletion of '{label}' failed")
-            QMessageBox.warning(self, "Error", error_msg)
+            error_msg = getattr(self.backend, "last_error", _("Deletion of '{label}' failed").format(label=label))
+            QMessageBox.warning(self, _("Error"), error_msg)
             self._reset_operation_flag()
 
     def _reset_operation_flag(self):

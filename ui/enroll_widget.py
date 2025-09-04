@@ -22,7 +22,7 @@ class EnrollWidget(QWidget):
     def __init__(self, backend, parent=None):
         super().__init__(parent)
         self.backend = backend
-        self.setWindowTitle("Enroll OTP secret")
+        self.setWindowTitle(_("Enroll OTP secret"))
         self.setMinimumWidth(400)
 
         enroll_view_layout = QVBoxLayout(self)
@@ -44,7 +44,7 @@ class EnrollWidget(QWidget):
         back.clicked.connect(self.cancel_requested.emit)
         page_header_layout.addWidget(back, 0, Qt.AlignmentFlag.AlignLeft)
         page_header_layout.addStretch() # pousse le titre vers le centre
-        title = QLabel("Add OTP Account")
+        title = QLabel(_("Add OTP Account"))
         title.setObjectName("enrollTitle")
         page_header_layout.addWidget(title)
         page_header_layout.addStretch() # pousse le titre vers le centre
@@ -67,12 +67,12 @@ class EnrollWidget(QWidget):
         issuer_layout = QVBoxLayout(issuer_section)
         issuer_layout.setContentsMargins(0, 0, 0, 0)
         issuer_layout.setSpacing(4)
-        issuer_name = QLabel("Issuer :")
+        issuer_name = QLabel(_("Issuer :"))
         issuer_layout.addWidget(issuer_name)
         self.issuer_edit = QLineEdit()
         self.issuer_edit.setPlaceholderText("Google, GitHub, etc.")
         self.issuer_edit.setValidator(no_colon_validator)
-        self.issuer_edit.setToolTip("Issuer name should not contain ':'")
+        self.issuer_edit.setToolTip(_("Issuer name should not contain ':'"))
         self.issuer_edit.setMaxLength(24)
         issuer_layout.addWidget(self.issuer_edit)
         content_layout.addWidget(issuer_section)
@@ -82,14 +82,14 @@ class EnrollWidget(QWidget):
         account_layout = QVBoxLayout(account_section)
         account_layout.setContentsMargins(0, 0, 0, 0)
         account_layout.setSpacing(4)
-        account_name = QLabel("Account name <span style='color:red'>*</span> :")
+        account_name = QLabel(_("Account name <span style='color:red'>*</span> :"))
         account_layout.addWidget(account_name)
         self.account_edit = QLineEdit()
-        self.account_edit.setPlaceholderText("user@example.com")
+        self.account_edit.setPlaceholderText(_("user@example.com"))
         self.account_edit.setValidator(no_colon_validator)
         self.account_edit.textChanged.connect(self._field_changed)
         self.account_edit.setMaxLength(32)
-        self.account_edit.setToolTip("Account name should not contain ':'")
+        self.account_edit.setToolTip(_("Account name should not contain ':'"))
         account_layout.addWidget(self.account_edit)
         content_layout.addWidget(account_section)
 
@@ -98,7 +98,7 @@ class EnrollWidget(QWidget):
         seed_layout = QVBoxLayout(seed_section)
         seed_layout.setContentsMargins(0, 0, 0, 0)
         seed_layout.setSpacing(4)
-        seed_label = QLabel("Secret key (Base32) <span style='color:red'>*</span> :")
+        seed_label = QLabel(_("Secret key (Base32) <span style='color:red'>*</span> :"))
         seed_layout.addWidget(seed_label)
         seed_row = QHBoxLayout()
         self.seed_edit = QLineEdit()
@@ -109,7 +109,7 @@ class EnrollWidget(QWidget):
         generate_icon_path = resource_path("images/generate.png")
         generate_icon_clicked_path = resource_path("images/generate_clicked.png")
         gen_btn = IconButton(generate_icon_path, generate_icon_clicked_path, QSize(24, 24))
-        gen_btn.setToolTip("Generate a random seed")
+        gen_btn.setToolTip(_("Generate a random seed"))
         gen_btn.clicked.connect(self._generate_seed)
         gen_btn.setObjectName("randomSeedBtn")
         seed_row.addWidget(gen_btn)
@@ -120,7 +120,7 @@ class EnrollWidget(QWidget):
 
         # === Bouton pour afficher/masquer les paramètres ===
         self.show_params_btn = QToolButton()
-        self.show_params_btn.setText("Advanced options")
+        self.show_params_btn.setText(_("Advanced options"))
         self.show_params_btn.setObjectName("advancedOptionsBtn")
         self.show_params_btn.setCheckable(True)
 
@@ -150,7 +150,7 @@ class EnrollWidget(QWidget):
         type_layout = QVBoxLayout(type_section)
         type_layout.setContentsMargins(0, 0, 0, 0)
         type_layout.setSpacing(4)
-        type_label = QLabel("OTP Type :")
+        type_label = QLabel(_("OTP Type :"))
         type_label.setWordWrap(True)
         type_layout.addWidget(type_label)
         self.type_combo = QComboBox()
@@ -163,7 +163,7 @@ class EnrollWidget(QWidget):
         algo_layout = QVBoxLayout(algo_section)
         algo_layout.setContentsMargins(0, 0, 0, 0)
         algo_layout.setSpacing(4)
-        algo_label = QLabel("Algorithm :")
+        algo_label = QLabel(_("Algorithm :"))
         algo_label.setWordWrap(True)
         algo_layout.addWidget(algo_label)
         self.algo_combo = QComboBox()
@@ -178,7 +178,7 @@ class EnrollWidget(QWidget):
         digits_layout = QVBoxLayout(digits_section)
         digits_layout.setContentsMargins(0, 0, 0, 0)
         digits_layout.setSpacing(4)
-        digits_label = QLabel("Number of digits :")
+        digits_label = QLabel(_("Number of digits :"))
         digits_label.setWordWrap(True)
         digits_layout.addWidget(digits_label)
         self.digits_spin = QSpinBox()
@@ -192,7 +192,7 @@ class EnrollWidget(QWidget):
         period_counter_layout = QVBoxLayout(period_counter_section)
         period_counter_layout.setContentsMargins(0, 0, 0, 0)
         period_counter_layout.setSpacing(4)
-        self.param_label = QLabel("Timestep (seconds) :")
+        self.param_label = QLabel(_("Timestep (seconds) :"))
         self.param_label.setWordWrap(True)
         period_counter_layout.addWidget(self.param_label)
         self.counter_spin = QSpinBox()
@@ -209,7 +209,7 @@ class EnrollWidget(QWidget):
         content_layout.addWidget(self.parameters_panel)
 
         # === Bouton Enroller ===
-        self.enroll_btn = QPushButton("Add account")
+        self.enroll_btn = QPushButton(_("Add account"))
         self.enroll_btn.setObjectName("enrollBtn")
         self.enroll_btn.clicked.connect(self._enroll)
         content_layout.addWidget(self.enroll_btn)
@@ -253,15 +253,15 @@ class EnrollWidget(QWidget):
         # Account name requis
         if not account_name:
             is_valid = False
-            tooltip_msg = "Account name is required"
+            tooltip_msg = _("Account name is required")
             
         # Seed requis et doit être du Base32 valide
         elif not seed:
             is_valid = False
-            tooltip_msg = "Secret key is required"
+            tooltip_msg = _("Secret key is required")
         elif not self.is_base32(seed):
             is_valid = False
-            tooltip_msg = "Secret key must be a valid Base32 string"
+            tooltip_msg = _("Secret key must be a valid Base32 string")
         else:
             # Validation supplémentaire de la longueur de la graine
             try:
@@ -269,10 +269,10 @@ class EnrollWidget(QWidget):
                 length_valid, length_error = EnrollWidget.validate_seed_length(secret_bytes, algo)
                 if not length_valid:
                     is_valid = False
-                    tooltip_msg = f"Invalid seed length: {length_error}"
+                    tooltip_msg = _("Invalid seed length: {length_error}").format(length_error=length_error)
             except Exception as e:
                 is_valid = False
-                tooltip_msg = f"Invalid Base32 encoding: {str(e)}"
+                tooltip_msg = _("Invalid Base32 encoding: {error}").format(error=str(e))
                 
         # Activer/désactiver le bouton selon la validation
         self.enroll_btn.setEnabled(is_valid)
@@ -304,11 +304,11 @@ class EnrollWidget(QWidget):
 
     def _update_param_label(self):
         if self.type_combo.currentText() == "TOTP":
-            self.param_label.setText("Timestep (seconds) :")
+            self.param_label.setText(_("Timestep (seconds) :"))
             self.counter_spin.hide()
             self.period_combo.show()
         else:
-            self.param_label.setText("Initial counter :")
+            self.param_label.setText(_("Initial counter :"))
             self.period_combo.hide()
             self.counter_spin.show()
 
@@ -342,21 +342,29 @@ class EnrollWidget(QWidget):
             tuple: (is_valid, error_message)
         """
         if algo not in SEED_LENGTH_LIMITS:
-            return False, f"Unknown algorithm: {algo}"
+            return False, _("Unknown algorithm: {algo}").format(algo=algo)
         
         limits = SEED_LENGTH_LIMITS[algo]
         length = len(secret_bytes)
         
         # Vérifier la longueur minimale acceptée
         if length < limits["min_accepted"]:
-            return False, f"Secret key too short for {algo}: {length} bytes (minimum: {limits['min_accepted']})"
+            return False, _("Secret key too short for {algo}: {length} bytes (minimum: {min_accepted})").format(
+                algo=algo,
+                length=length,
+                min_accepted=limits['min_accepted']
+            )
         
         # Vérifier la longueur maximale
         if length > limits["max"]:
-            return False, f"Secret key too long for {algo}: {length} bytes (maximum: {limits['max']})"
+            return False, _("Secret key too long for {algo}: {length} bytes (maximum: {max})").format(
+                algo=algo,
+                length=length,
+                max = limits["max"]
+            )
         
-        if length < limits["min_recommended"]:
-            print(f"Warning: Secret key length ({length} bytes) is below recommended for {algo}")
+        # if length < limits["min_recommended"]:
+        #     print(f"Warning: Secret key length ({length} bytes) is below recommended for {algo}")
         
         return True, ""
 
@@ -371,15 +379,15 @@ class EnrollWidget(QWidget):
         seed = self.seed_edit.text().strip().replace(" ", "")
 
         if not account_name :
-            QMessageBox.warning(self, "Error", "Account name is required.")
+            QMessageBox.warning(self, _("Error"), _("Account name is required."))
             self.account_edit.setStyleSheet("background-color: #ffe4e1;")
             return
         if not seed:
-            QMessageBox.warning(self, "Error", "Secret key is required.")
+            QMessageBox.warning(self, _("Error"), _("Secret key is required."))
             self.seed_edit.setStyleSheet("background-color: #ffe4e1;")
             return
         if seed and not self.is_base32(seed):
-            QMessageBox.warning(self, "Error", "Secret key must be a valid Base32 string.")
+            QMessageBox.warning(self, _("Error"), _("Secret key must be a valid Base32 string."))
             self.seed_edit.setStyleSheet("background-color: #ffe4e1;")
             return
         
@@ -388,11 +396,11 @@ class EnrollWidget(QWidget):
             secret_bytes = base64.b32decode(seed.upper(), casefold=True)
             is_valid, error_msg = self.validate_seed_length(secret_bytes, algo)
             if not is_valid:
-                QMessageBox.warning(self, "Error", f"Secret key validation failed:\n{error_msg}")
+                QMessageBox.warning(self, _("Error"), _("Secret key validation failed:\n{error_msg}").format(error_msg=error_msg))
                 self.seed_edit.setStyleSheet("background-color: #ffe4e1;")
                 return
         except Exception as e:
-            QMessageBox.warning(self, "Error", f"Invalid Base32 encoding: {str(e)}")
+            QMessageBox.warning(self, _("Error"), _("Invalid Base32 encoding: {error}").format(error=str(e)))
             self.seed_edit.setStyleSheet("background-color: #ffe4e1;")
             return
 
@@ -410,8 +418,8 @@ class EnrollWidget(QWidget):
             self.seed_enrolled.emit()
 
         else:
-            error_msg = getattr(self.backend, "last_error", "Unknown error")
-            QMessageBox.critical(self, "OTP Error", error_msg)
+            error_msg = getattr(self.backend, "last_error", _("Unknown error"))
+            QMessageBox.critical(self, _("OTP Error"), error_msg)
 
 class NoColonValidator(QValidator):
     def validate(self, input_str, pos):

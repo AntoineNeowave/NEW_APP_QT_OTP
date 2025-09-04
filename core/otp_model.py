@@ -26,17 +26,17 @@ class OTPGenerator:
             self.account = self.label
             self.issuer = ""
         parts = [
-            f"Type : {TYPE_NAME.get(self.otp_type, '?')}",
-            f"Account : {self.account}",
+            _("Type: {type_name}").format(type_name=TYPE_NAME.get(self.otp_type, '?')),
+            _("Account : {account}").format(account=self.account),
             ]
         if self.issuer:
-            parts.append(f"Issuer : {self.issuer}")
-        parts.append(f"Code length : {self.digits}")
+            parts.append(_("Issuer: {issuer}").format(issuer=self.issuer))
+        parts.append(_("Code length: {digits}").format(digits=self.digits))
         if self.otp_type == 1:
             counter_value = int.from_bytes(self.counter, 'big') if self.counter else '?'
-            parts.append(f"Counter : {counter_value}")
+            parts.append(_("Counter: {counter}").format(counter=counter_value))
         elif self.otp_type == 2:
-            parts.append(f"Timestep : {self.period} seconds")
-        algo_name = ALG_CODE_TO_NAME.get(self.alg, f"Unknown({self.alg})")
-        parts.append(f"Algorithm: {algo_name}")
+            parts.append(_("Timestep: {period} seconds").format(period=self.period))
+        algo_name = ALG_CODE_TO_NAME.get(self.alg, _("Unknown ({alg})").format(alg=self.alg))
+        parts.append(_("Algorithm: {algo}").format(algo=algo_name))
         return "\n".join(parts)

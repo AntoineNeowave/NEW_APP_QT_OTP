@@ -17,14 +17,14 @@ ALG_NAME_TO_CODE = {"SHA1": 4, "SHA256": 5, "SHA512": 7}
 TYPE_NAME_TO_CODE = {"HOTP": 1, "TOTP": 2}
 
 OTP_ERROR_CODES = {
-    0x00: ("OTP_OK", "Command executed successfully"),
-    0x01: ("ERR_INVALID_CMD", "Command not recognized"),
-    0xF1: ("OTP_ERR_INVALID_CBOR", "The command contains invalid CBOR encoding"),
-    0xF2: ("OTP_ERR_INVALID_COMMAND", "Unrecognized OTP command"),
-    0xF3: ("OTP_ERR_INVALID_PARAMETER", "Invalid parameter in command"),
-    0xF4: ("OTP_ERR_GENERATOR_EXISTS", "A generator with this name already exists"),
-    0xF5: ("OTP_ERR_GENERATOR_NOT_FOUND", "Generator not found"),
-    0xF6: ("OTP_ERR_MEMORY_FULL", "Memory full, unable to create another generator"),
+    0x00: ("OTP_OK", _("Command executed successfully")),
+    0x01: ("ERR_INVALID_CMD", _("Command not recognized")),
+    0xF1: ("OTP_ERR_INVALID_CBOR", _("The command contains invalid CBOR encoding")),
+    0xF2: ("OTP_ERR_INVALID_COMMAND", _("Unrecognized OTP command")),
+    0xF3: ("OTP_ERR_INVALID_PARAMETER", _("Invalid parameter in command")),
+    0xF4: ("OTP_ERR_GENERATOR_EXISTS", _("A generator with this name already exists")),
+    0xF5: ("OTP_ERR_GENERATOR_NOT_FOUND", _("Generator not found")),
+    0xF6: ("OTP_ERR_MEMORY_FULL", _("Memory full, unable to create another generator")),
 }
 
 class FidoOTPBackend:
@@ -37,7 +37,7 @@ class FidoOTPBackend:
 
     @staticmethod
     def get_error_message(code: int) -> str:
-        return OTP_ERROR_CODES.get(code, (f"Unknown error 0x{code:02X}", "Undocumented error"))[1]
+        return OTP_ERROR_CODES.get(code, (_("Unknown error 0x{code:02X}").format(code=code), _("Undocumented error")))[1]
 
     def _test_otp_support(self, ctap):
         """Teste si le device supporte les commandes OTP"""
@@ -102,7 +102,7 @@ class FidoOTPBackend:
 
         # Aucun device compatible trouvé
         self._cleanup_connection()
-        raise RuntimeError("⚠️ No OTP Device detected.")
+        raise RuntimeError(_("⚠️ No OTP Device detected."))
 
     def _cleanup_connection(self):
         """Nettoie la connexion actuelle"""
@@ -127,7 +127,7 @@ class FidoOTPBackend:
             except (OSError, IOError, ConnectionError) as e:
                 # Erreur de communication/USB
                 self._cleanup_connection()
-                self.last_error = "Device communication error"
+                self.last_error = _("Device communication error")
                 return False, None
             except (Exception, RuntimeError) as e:
                 # Erreur de connexion/communication → invalider la connexion

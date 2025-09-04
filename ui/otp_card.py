@@ -53,11 +53,11 @@ class OTPCard(QFrame):
         self.copy_button = IconButton(copy_button_path, copy_button_clicked_path, QSize(16, 16))
         self.copy_button.setFixedSize(16, 16)
         self.copy_button.setFlat(True)
-        self.copy_button.setToolTip("Copy code to clipboard")
+        self.copy_button.setToolTip(_("Copy code to clipboard"))
         self.copy_button.setVisible(False)
         self.copy_button.clicked.connect(self.copy_code)
 
-        self.feedback_label = QLabel("Code copied")
+        self.feedback_label = QLabel(_("Code copied"))
         self.feedback_label.setObjectName("CopiedLabel")
         self.feedback_label.setVisible(False)
 
@@ -115,7 +115,7 @@ class OTPCard(QFrame):
         self.info_button = IconButton(info_button_path, info_button_clicked_path, QSize(15, 15))
         self.info_button.setFixedSize(15, 15)
         self.info_button.setFlat(True)
-        self.info_button.setToolTip("Show OTP parameters")
+        self.info_button.setToolTip(_("Show OTP parameters"))
         self.info_button.clicked.connect(lambda: self.parameters_requested.emit(self.label_text, self.otp_type))
 
         delete_button_path = resource_path("images/trash.png")
@@ -123,7 +123,7 @@ class OTPCard(QFrame):
         self.delete_button = IconButton(delete_button_path, delete_button_clicked_path, QSize(15, 15))
         self.delete_button.setFixedSize(15, 15)
         self.delete_button.setFlat(True)
-        self.delete_button.setToolTip("Delete OTP account")
+        self.delete_button.setToolTip(_("Delete OTP account"))
         self.delete_button.clicked.connect(lambda: self.delete_requested.emit(self.label_text))
 
         # Ligne du bas pour info/delete
@@ -181,10 +181,10 @@ class OTPCard(QFrame):
             return
         
         menu = QMenu(self)
-        show_params_action = QAction("Show OTP parameters", self)
+        show_params_action = QAction(_("Show OTP parameters"), self)
         show_params_action.triggered.connect(lambda: self.parameters_requested.emit(self.label_text, self.otp_type))
 
-        delete_action = QAction("Delete OTP code", self)
+        delete_action = QAction(_("Delete OTP code"), self)
         delete_action.setObjectName("deleteAction")
         delete_action.triggered.connect(lambda: self.delete_requested.emit(self.label_text))
 
@@ -195,13 +195,13 @@ class OTPCard(QFrame):
 
     def show_parameters(self):
         msg = QMessageBox(self)
-        msg.setWindowTitle("Parameters")
+        msg.setWindowTitle(_("Informations"))
         msg.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         msg.setText(self.parameter_text)
         msg.setStandardButtons(QMessageBox.StandardButton.Ok)
         msg.exec()
 
-    def set_offline(self, reason: str = "Disconnected"):
+    def set_offline(self, reason: str = _("Disconnected")):
         self.label_code.setText("●●●●●●")
         self.copy_button.setVisible(False)
         self.info_button.setVisible(False)
