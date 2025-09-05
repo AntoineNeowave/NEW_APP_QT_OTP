@@ -17,10 +17,7 @@ def setup_i18n():
         language = language.split('_')[0]  # 'fr_FR' -> 'fr'
     except Exception:
         language = "en"
-    
-    print(f"Langue détectée: {language}")
-    print(f"Dossier traductions: {locales_dir}")
-    
+        
     # Nom de domaine (doit correspondre au nom de vos fichiers .po/.mo)
     domain = 'messages'
     
@@ -33,11 +30,9 @@ def setup_i18n():
                 languages=[language],
                 fallback=True
             )
-            print(f"Traduction chargée pour: {language}")
         else:
             # Pas de traduction (anglais ou fichier non trouvé)
             translation = gettext.NullTranslations()
-            print("Aucune traduction (anglais par défaut)")
             
         # Installer globalement
         translation.install()

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-09-02 17:13+0200\n"
+"POT-Creation-Date: 2025-09-04 16:58+0200\n"
 "PO-Revision-Date: 2025-09-02 17:13+0200\n"
 "Last-Translator: <EMAIL@ADDRESS>\n"
 "Language-Team: French\n"
@@ -59,7 +59,7 @@ msgstr "Erreur inconnue 0x{code:02X}"
 msgid "Undocumented error"
 msgstr "Erreur non documentée"
 
-#: .\core\fido_backend.py:105 .\ui\main_window.py:138
+#: .\core\fido_backend.py:105 .\ui\main_window.py:139
 msgid "⚠️ No OTP Device detected."
 msgstr "⚠️ Aucun périphérique OTP détecté."
 
@@ -117,7 +117,7 @@ msgstr "Erreur CTAP"
 
 #: .\core\otp_refresh_worker.py:43 .\ui\enroll_widget.py:382
 #: .\ui\enroll_widget.py:386 .\ui\enroll_widget.py:390
-#: .\ui\enroll_widget.py:399 .\ui\enroll_widget.py:403 .\ui\main_window.py:465
+#: .\ui\enroll_widget.py:399 .\ui\enroll_widget.py:403 .\ui\main_window.py:475
 msgid "Error"
 msgstr "Erreur"
 
@@ -162,20 +162,20 @@ msgid "Advanced options"
 msgstr "Options avancées"
 
 #: .\ui\enroll_widget.py:153
-msgid "OTP Type :"
-msgstr "Type OTP :"
+msgid "Type"
+msgstr "Type"
 
 #: .\ui\enroll_widget.py:166
-msgid "Algorithm :"
-msgstr "Algorithme :"
+msgid "Algorithm"
+msgstr "Algorithme"
 
 #: .\ui\enroll_widget.py:181
-msgid "Number of digits :"
-msgstr "Nombre de chiffres :"
+msgid "Digits"
+msgstr "Longueur"
 
-#: .\ui\enroll_widget.py:195 .\ui\enroll_widget.py:307
-msgid "Timestep (seconds) :"
-msgstr "Durée (secondes) :"
+#: .\ui\enroll_widget.py:195
+msgid "Timestep (s)"
+msgstr "Durée (s)"
 
 #: .\ui\enroll_widget.py:212
 msgid "Add account"
@@ -203,8 +203,12 @@ msgstr "Longueur de graine invalide : {length_error}"
 msgid "Invalid Base32 encoding: {error}"
 msgstr "Encodage Base32 invalide : {error}"
 
+#: .\ui\enroll_widget.py:307
+msgid "Timestep (seconds)"
+msgstr "Durée (secondes)"
+
 #: .\ui\enroll_widget.py:311
-msgid "Initial counter :"
+msgid "Initial counter"
 msgstr "Compteur initial :"
 
 #: .\ui\enroll_widget.py:345
@@ -217,7 +221,8 @@ msgstr "Algorithme inconnu : {algo}"
 msgid ""
 "Secret key too short for {algo}: {length} bytes (minimum: {min_accepted})"
 msgstr ""
-"Clé secrète trop courte pour {algo} : {length} octets (minimum : {min_accepted})"
+"Clé secrète trop courte pour {algo} : {length} octets (minimum : "
+"{min_accepted})"
 
 #: .\ui\enroll_widget.py:360
 #, python-brace-format
@@ -254,29 +259,37 @@ msgstr "Erreur inconnue"
 msgid "OTP Error"
 msgstr "Erreur OTP"
 
-#: .\ui\main_window.py:66
+#: .\ui\main_window.py:67
 msgid "Search for a code..."
 msgstr "Rechercher un code..."
 
-#: .\ui\main_window.py:140 .\ui\main_window.py:337
+#: .\ui\main_window.py:141 .\ui\main_window.py:338
 msgid "Device disconnected"
 msgstr "Périphérique déconnecté"
 
-#: .\ui\main_window.py:352
+#: .\ui\main_window.py:353
 msgid "Device unplugged"
 msgstr "Périphérique débranché"
 
-#: .\ui\main_window.py:390
+#: .\ui\main_window.py:391
 #, python-brace-format
 msgid "Delete {account}"
 msgstr "Supprimer {account}"
 
-#: .\ui\main_window.py:391
+#: .\ui\main_window.py:392
 #, python-brace-format
 msgid "Are you sure you want to delete the OTP generator '{account}'?"
 msgstr "Êtes-vous sûr de vouloir supprimer le générateur OTP '{account}' ?"
 
-#: .\ui\main_window.py:464
+#: .\ui\main_window.py:396
+msgid "Yes"
+msgstr "Oui"
+
+#: .\ui\main_window.py:397
+msgid "No"
+msgstr "Non"
+
+#: .\ui\main_window.py:474
 #, python-brace-format
 msgid "Deletion of '{label}' failed"
 msgstr "Échec de la suppression de '{label}'"
@@ -308,3 +321,6 @@ msgstr "Informations"
 #: .\ui\otp_card.py:204
 msgid "Disconnected"
 msgstr "Déconnecté"
+
+#~ msgid "Number of digits"
+#~ msgstr "Nombre de chiffres"

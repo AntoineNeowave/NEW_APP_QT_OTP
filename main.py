@@ -15,9 +15,7 @@ class FileLockSingleton:
         self.lock_file = os.path.join(tempfile.gettempdir(), f"{app_name}.lock")
         self.pid = os.getpid()
         self.lock_handle = None  # Ajout pour garder le handle
-        
-        print(f"Début singleton fichier: {self.lock_file}")
-        
+                
         if self._check_existing_instance():
             print("❌ Instance déjà détectée")
             # Au lieu du warning, on sort silencieusement
@@ -26,7 +24,6 @@ class FileLockSingleton:
         
         # Créer le fichier de verrouillage
         self._create_lock()
-        print("✅ Première instance - lock créé")
         
         # Nettoyer automatiquement
         atexit.register(self.cleanup)
@@ -186,7 +183,6 @@ class FileLockSingleton:
             if self.lock_handle:
                 try:
                     self.lock_handle.close()
-                    print("Handle fermé")
                 except Exception as e:
                     print(f"Erreur fermeture handle: {e}")
                 finally:
@@ -212,7 +208,6 @@ class FileLockSingleton:
                 for attempt in range(max_attempts):
                     try:
                         os.remove(self.lock_file)
-                        print("Lock file supprimé")
                         return
                     except (OSError, PermissionError) as e:
                         if attempt < max_attempts - 1:
@@ -255,9 +250,6 @@ def main():
     styles = load_qss_with_images()
     if styles:
         app.setStyleSheet(styles)
-        print("✅ Styles appliqués")
-    else:
-        print("⚠ Application lancée sans styles")
     window = MainWindow()    
     window.show()    
 

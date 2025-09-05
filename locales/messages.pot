@@ -1,14 +1,14 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
+# This file is distributed under the same license as the NeoOTP package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: NeoOTP 0.0.7\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-09-02 17:13+0200\n"
+"POT-Creation-Date: 2025-09-04 16:58+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -58,7 +58,7 @@ msgstr ""
 msgid "Undocumented error"
 msgstr ""
 
-#: .\core\fido_backend.py:105 .\ui\main_window.py:138
+#: .\core\fido_backend.py:105 .\ui\main_window.py:139
 msgid "⚠️ No OTP Device detected."
 msgstr ""
 
@@ -73,7 +73,7 @@ msgstr ""
 
 #: .\core\otp_model.py:30
 #, python-brace-format
-msgid "Account : {self.account}"
+msgid "Account : {account}"
 msgstr ""
 
 #: .\core\otp_model.py:33
@@ -116,7 +116,7 @@ msgstr ""
 
 #: .\core\otp_refresh_worker.py:43 .\ui\enroll_widget.py:382
 #: .\ui\enroll_widget.py:386 .\ui\enroll_widget.py:390
-#: .\ui\enroll_widget.py:399 .\ui\enroll_widget.py:403 .\ui\main_window.py:465
+#: .\ui\enroll_widget.py:399 .\ui\enroll_widget.py:403 .\ui\main_window.py:475
 msgid "Error"
 msgstr ""
 
@@ -161,19 +161,19 @@ msgid "Advanced options"
 msgstr ""
 
 #: .\ui\enroll_widget.py:153
-msgid "OTP Type :"
+msgid "Type"
 msgstr ""
 
 #: .\ui\enroll_widget.py:166
-msgid "Algorithm :"
+msgid "Algorithm"
 msgstr ""
 
 #: .\ui\enroll_widget.py:181
-msgid "Number of digits :"
+msgid "Digits"
 msgstr ""
 
-#: .\ui\enroll_widget.py:195 .\ui\enroll_widget.py:307
-msgid "Timestep (seconds) :"
+#: .\ui\enroll_widget.py:195
+msgid "Timestep (s)"
 msgstr ""
 
 #: .\ui\enroll_widget.py:212
@@ -202,8 +202,12 @@ msgstr ""
 msgid "Invalid Base32 encoding: {error}"
 msgstr ""
 
+#: .\ui\enroll_widget.py:307
+msgid "Timestep (seconds)"
+msgstr ""
+
 #: .\ui\enroll_widget.py:311
-msgid "Initial counter :"
+msgid "Initial counter"
 msgstr ""
 
 #: .\ui\enroll_widget.py:345
@@ -249,29 +253,37 @@ msgstr ""
 msgid "OTP Error"
 msgstr ""
 
-#: .\ui\main_window.py:66
+#: .\ui\main_window.py:67
 msgid "Search for a code..."
 msgstr ""
 
-#: .\ui\main_window.py:140 .\ui\main_window.py:337
+#: .\ui\main_window.py:141 .\ui\main_window.py:338
 msgid "Device disconnected"
 msgstr ""
 
-#: .\ui\main_window.py:352
+#: .\ui\main_window.py:353
 msgid "Device unplugged"
-msgstr ""
-
-#: .\ui\main_window.py:390
-#, python-brace-format
-msgid "Delete {account}"
 msgstr ""
 
 #: .\ui\main_window.py:391
 #, python-brace-format
+msgid "Delete {account}"
+msgstr ""
+
+#: .\ui\main_window.py:392
+#, python-brace-format
 msgid "Are you sure you want to delete the OTP generator '{account}'?"
 msgstr ""
 
-#: .\ui\main_window.py:464
+#: .\ui\main_window.py:396
+msgid "Yes"
+msgstr ""
+
+#: .\ui\main_window.py:397
+msgid "No"
+msgstr ""
+
+#: .\ui\main_window.py:474
 #, python-brace-format
 msgid "Deletion of '{label}' failed"
 msgstr ""
@@ -297,7 +309,7 @@ msgid "Delete OTP code"
 msgstr ""
 
 #: .\ui\otp_card.py:198
-msgid "Parameters"
+msgid "Informations"
 msgstr ""
 
 #: .\ui\otp_card.py:204

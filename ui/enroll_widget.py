@@ -150,7 +150,7 @@ class EnrollWidget(QWidget):
         type_layout = QVBoxLayout(type_section)
         type_layout.setContentsMargins(0, 0, 0, 0)
         type_layout.setSpacing(4)
-        type_label = QLabel(_("OTP Type :"))
+        type_label = QLabel(_("Type"))
         type_label.setWordWrap(True)
         type_layout.addWidget(type_label)
         self.type_combo = QComboBox()
@@ -163,7 +163,7 @@ class EnrollWidget(QWidget):
         algo_layout = QVBoxLayout(algo_section)
         algo_layout.setContentsMargins(0, 0, 0, 0)
         algo_layout.setSpacing(4)
-        algo_label = QLabel(_("Algorithm :"))
+        algo_label = QLabel(_("Algorithm"))
         algo_label.setWordWrap(True)
         algo_layout.addWidget(algo_label)
         self.algo_combo = QComboBox()
@@ -178,7 +178,7 @@ class EnrollWidget(QWidget):
         digits_layout = QVBoxLayout(digits_section)
         digits_layout.setContentsMargins(0, 0, 0, 0)
         digits_layout.setSpacing(4)
-        digits_label = QLabel(_("Number of digits :"))
+        digits_label = QLabel(_("Digits"))
         digits_label.setWordWrap(True)
         digits_layout.addWidget(digits_label)
         self.digits_spin = QSpinBox()
@@ -192,7 +192,7 @@ class EnrollWidget(QWidget):
         period_counter_layout = QVBoxLayout(period_counter_section)
         period_counter_layout.setContentsMargins(0, 0, 0, 0)
         period_counter_layout.setSpacing(4)
-        self.param_label = QLabel(_("Timestep (seconds) :"))
+        self.param_label = QLabel(_("Timestep (s)"))
         self.param_label.setWordWrap(True)
         period_counter_layout.addWidget(self.param_label)
         self.counter_spin = QSpinBox()
@@ -304,11 +304,11 @@ class EnrollWidget(QWidget):
 
     def _update_param_label(self):
         if self.type_combo.currentText() == "TOTP":
-            self.param_label.setText(_("Timestep (seconds) :"))
+            self.param_label.setText(_("Timestep (seconds)"))
             self.counter_spin.hide()
             self.period_combo.show()
         else:
-            self.param_label.setText(_("Initial counter :"))
+            self.param_label.setText(_("Initial counter"))
             self.period_combo.hide()
             self.counter_spin.show()
 

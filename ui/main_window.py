@@ -385,16 +385,25 @@ class MainWindow(QWidget):
         else:
             account = label
             issuer = ""
-            
-        reply = QMessageBox.question(
-            self,
-            _("Delete {account}").format(account=account),
-            _("Are you sure you want to delete the OTP generator '{account}'?").format(account=account),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-
         
-        if reply == QMessageBox.StandardButton.Yes:
+        # Créer une boîte de dialogue avec boutons personnalisés
+        msg = QMessageBox(self)
+        msg.setWindowTitle(_("Delete {account}").format(account=account))
+        msg.setText(_("Are you sure you want to delete the OTP generator '{account}'?").format(account=account))
+        msg.setIcon(QMessageBox.Icon.Question)
+        
+        # Ajouter des boutons personnalisés avec texte traduit
+        yes_button = msg.addButton(_("Yes"), QMessageBox.ButtonRole.YesRole)
+        no_button = msg.addButton(_("No"), QMessageBox.ButtonRole.NoRole)
+        
+        # Définir le bouton par défaut
+        msg.setDefaultButton(yes_button)
+        
+        # Afficher et récupérer la réponse
+        msg.exec()
+        clicked_button = msg.clickedButton()
+        
+        if clicked_button == yes_button:
             self.operation_in_progress = True
             self.pending_delete_label = label
             

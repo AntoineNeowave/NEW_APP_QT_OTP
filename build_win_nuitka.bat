@@ -17,8 +17,9 @@ python -m nuitka ^
   --output-dir=dist ^
   --output-filename=NeoOTP.exe ^
   --remove-output ^
-  --windows-product-name="NeoOTP Manager" ^
-  --windows-company-name="Votre Entreprise" ^
+  --windows-console-mode=disable ^
+  --windows-product-name="NEOWAVE OTP Manager" ^
+  --windows-company-name="NEOWAVE" ^
   --windows-product-version="1.0.0.0" ^
   --windows-file-version="1.0.0.0" ^
   --windows-file-description="NEOWAVE OTP Manager" ^

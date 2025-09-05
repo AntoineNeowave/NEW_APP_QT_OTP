@@ -1,4 +1,4 @@
 rem PyInstaller main.py --name NeoOTP --onefile --noconsole --clean --add-data "ui;ui"  --add-data "images;images"
-PyInstaller main.py --name NeoOTP --onefile --noconsole --clean --hidden-import fido2.hid --hidden-import fido2.pcsc --hidden-import smartcard --collect-submodules fido2 --collect-binaries hid --collect-binaries hidapi --collect-binaries smartcard --collect-data smartcard --collect-all pyscard --uac-admin --manifest app.manifest --add-data "ui;ui"  --add-data "images;images" --add-data "locales:locales" --icon=images/logo.ico --clean --log-level=DEBUG
+PyInstaller main.py --name NeoOTP --onefile --noconsole --clean --hidden-import fido2.hid --hidden-import fido2.pcsc --hidden-import smartcard --collect-submodules fido2 --collect-binaries hid --collect-binaries hidapi --collect-binaries smartcard --collect-data smartcard --collect-all pyscard --add-data "ui;ui"  --add-data "images;images" --add-data "locales:locales" --icon=images/logo.ico --clean
 rem ajouter --runtime-tmpdir pour extraire les DLL a côté de .exe , pour un lancement plus rapide
-rem Ou bien utiliser nuitkla
+rem ajouter --uac-admin --manifest app.manifest pour lancer l'exe en admin

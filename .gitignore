@@ -6,4 +6,5 @@ build/
 NeoOTP.spec
 logs/
 logs/*
-extract.py
+extract_traduction.py
+update_traduction.py
